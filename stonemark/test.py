@@ -108,12 +108,10 @@ def test_simple_doc_1():
     ```
     """)
 
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
-    doc = document(test_doc)
-    assert shape(doc) == [Heading,  Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem, ]]], Paragraph, CodeBlock, CodeBlock]
-    assert to_html(doc) == dedent("""\
-            <h1>Document Title</h1>
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Heading,  Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem, ]]], Paragraph, CodeBlock, CodeBlock]
+    assert doc.to_html() == dedent("""\
+            <h2>Document Title</h2>
 
             <p>In this paragraph we see that we have multiple lines of a single
             sentence.</p>
@@ -136,33 +134,31 @@ def test_simple_doc_1():
             <pre><code>
             and another code block!
             </code></pre>
-            """)
+            """).strip()
 
 def test_simple_doc_2():
     test_doc = dedent("""\
-    Document Title
-    ==============
+            ==============
+            Document Title
+            ==============
 
-    In this paragraph we see that we have multiple lines of a single
-    sentence.
+            In this paragraph we see that we have multiple lines of a single
+            sentence.
 
-    - plus a two-line
-    - list for good measure
-      + and a sublist
-      + for really good measure
-    - back to main list
+            - plus a two-line
+            - list for good measure
+              1) and a sublist
+              2) for really good measure
+            - back to main list
 
 
-    ```
-    and another code block!
-    ```
-    """)
-
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
-    doc = document(test_doc)
-    assert shape(doc) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]], ListItem], CodeBlock]
-    assert to_html(doc) == dedent("""\
+            ```
+            and another code block!
+            ```
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]], ListItem], CodeBlock]
+    assert doc.to_html() == dedent("""\
             <h1>Document Title</h1>
 
             <p>In this paragraph we see that we have multiple lines of a single
@@ -171,47 +167,44 @@ def test_simple_doc_2():
             <ul>
             <li>plus a two-line</li>
             <li>list for good measure</li>
-                <ul>
+                <ol>
                 <li>and a sublist</li>
                 <li>for really good measure</li>
-                </ul>
+                </ol>
             <li>back to main list</li>
             </ul>
 
             <pre><code>
             and another code block!
             </code></pre>
-            """)
+            """).strip()
 
 def test_simple_doc_3():
     test_doc = dedent("""\
-    Document Title
-    ==============
+            Document Title
+            ==============
 
-    In this paragraph we see that we have multiple lines of a single
-    sentence.
+            In this paragraph we see that we have multiple lines of a single
+            sentence.
 
-    - plus a two-line
-    - list for good measure
-      + and a sublist
-      + for really good measure
+            - plus a two-line
+            - list for good measure
+              + and a sublist
+              + for really good measure
 
-    Now a tiny paragraph I mean header
-    ----------------------------------
+            Now a tiny paragraph I mean header
+            ----------------------------------
 
-        and a code block!
+                and a code block!
 
-    ```
-    and another code block!
-    ```
-    """)
-
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
-    doc = document(test_doc)
-    assert shape(doc) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock]
-    assert to_html(doc) == dedent("""\
-            <h1>Document Title</h1>
+            ```
+            and another code block!
+            ```
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock]
+    assert doc.to_html() == dedent("""\
+            <h2>Document Title</h2>
 
             <p>In this paragraph we see that we have multiple lines of a single
             sentence.</p>
@@ -234,35 +227,34 @@ def test_simple_doc_3():
             <pre><code>
             and another code block!
             </code></pre>
-            """)
+            """).strip()
 
 def test_simple_doc_4():
     test_doc = dedent("""\
-    Document Title
-    ==============
+            ==============
+            Document Title
+            ==============
 
-    In this paragraph we see that we have multiple lines of a single
-    sentence.
+            In this paragraph we see that we have multiple lines of a single
+            sentence.
 
-    - plus a two-line
-    - list for good measure
+            - plus a two-line
+            - list for good measure
 
-    ---
+            ---
 
-    Now a tiny paragraph.
+            Now a tiny paragraph.
 
-        and a code block!
+                and a code block!
 
-    ```
-    and another code block!
-    ```
-    """)
+            ```
+            and another code block!
+            ```
+            """)
 
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
-    doc = document(test_doc)
-    assert shape(doc) == [Heading, Paragraph, List, [ListItem, ListItem], Rule, Paragraph, CodeBlock, CodeBlock]
-    assert to_html(doc) == dedent("""\
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Heading, Paragraph, List, [ListItem, ListItem], Rule, Paragraph, CodeBlock, CodeBlock]
+    assert doc.to_html() == dedent("""\
             <h1>Document Title</h1>
 
             <p>In this paragraph we see that we have multiple lines of a single
@@ -284,72 +276,150 @@ def test_simple_doc_4():
             <pre><code>
             and another code block!
             </code></pre>
-            """)
+            """).strip()
 
 def test_failure_1():
     test_doc = dedent("""\
-    Document Title
-    ==============
+            Document Title
+            ==============
 
-    In this paragraph we see that we have multiple lines of a single
-    sentence.
+            In this paragraph we see that we have multiple lines of a single
+            sentence.
 
-    - plus a two-line
-    - list for good measure
-      + and a sublist
-      + for really good measure
-    - back to main list
+            - plus a two-line
+            - list for good measure
+              + and a sublist
+              + for really good measure
+            - back to main list
 
-        and a code block!
+                and a code block!
 
-    ```
-    and another code block!
-    ```
-    """)
+            ```
+            and another code block!
+            ```
+            """)
 
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
     try:
-        doc = document(test_doc)
+        doc = Document(test_doc)
     except BadFormat as exc:
         assert 'line 12' in exc.msg
     else:
         raise Exception('failure did not occur')
 
-def test_format_nesting():
+def test_format_nesting_1():
     test_doc = dedent("""\
             **this is **really important** important info**
             """)
-    doc = document(test_doc)
-    assert to_html(doc) == "<p><b>this is really important important info</b></p>"
+    doc = Document(test_doc)
+    assert doc.to_html() == "<p><b>this is really important important info</b></p>"
+
+def test_format_nesting_2():
+    test_doc = dedent("""\
+            **this is *really important* important info**
+            """)
+    doc = Document(test_doc)
+    assert doc.to_html() == "<p><b>this is <i>really important</i> important info</b></p>"
+
+def test_format_footnote():
+    test_doc = dedent("""\
+            This is a paragraph talking about many things. [^1] The question is:
+            how are those many things related?
+
+            ---
+
+            [^1]: Okay, maybe just the one thing.
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Paragraph, Rule, IDLink]
+    assert doc.to_html() == dedent("""\
+            <p>This is a paragraph talking about many things. <sup><a href="#footnote-1">1</a></sup> The question is:
+            how are those many things related?</p>
+
+            <hr>
+
+            <span id="footnote-1"><sup>1</sup> Okay, maybe just the one thing.</span>
+            """).strip()
+
+def test_format_exteral_link_1():
+    test_doc = dedent("""\
+            This is a paragraph talking about [board game resources][1].  How many of them
+            are there, anyway?
+
+            [1]: http://www.boardgamegeek.com
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Paragraph]
+    assert doc.to_html() == dedent("""\
+            <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them
+            are there, anyway?</p>
+            """).strip()
+
+def test_format_exteral_link_2():
+    test_doc = dedent("""\
+            This is a paragraph talking about [board game resources](http://www.boardgamegeek.com).  How many of them
+            are there, anyway?
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Paragraph]
+    assert doc.to_html() == dedent("""\
+            <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them
+            are there, anyway?</p>
+            """).strip()
+
+def test_format_wiki_link():
+    test_doc = dedent("""\
+            Check the [Documentation] for more details.
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Paragraph]
+    assert doc.to_html() == dedent("""\
+            <p>Check the <a href="Documentation">Documentation</a> for more details.</p>
+            """).strip()
+
+
+def test_format_image():
+    test_doc = dedent("""\
+            An introductory paragraph.
+
+            ![*a riveting picture*](https://www.image_library/photos/rivets.png)
+
+            A concluding paragraph.
+            """)
+    doc = Document(test_doc)
+    assert shape(doc) == [Paragraph, Image, Paragraph]
+    assert doc.to_html() == dedent("""\
+            <p>An introductory paragraph.</p>
+
+            <img src="https://www.image_library/photos/rivets.png" alt="<i>a riveting picture</i>">
+
+            <p>A concluding paragraph.</p>
+            """).strip()
 
 def test_formatted_doc_1():
     test_doc = dedent("""\
-    Document Title
-    ==============
+            ==============
+            Document Title
+            ==============
 
-    In **this paragraph** we see that we have multiple lines of a *single
-    sentence*.
+            In **this paragraph** we see that we have multiple lines of a *single
+            sentence*.
 
-    - plus a ***two-line***
-    - list `for good` measure
-      + and __a sublist__
-      + for ~~really~~ good measure
+            - plus a ***two-line***
+            - list `for good` measure
+              + and __a sublist__
+              + for ~~really~~ good measure
 
-    Now a ==tiny paragraph== that talks about water (H~2~O) raised 2^4^ power.
+            Now a ==tiny paragraph== that talks about water (H~2~O) raised 2^4^ power.
 
-        and a code block!
+                and a code block!
 
-    ```
-    and another code block!
-    ```
-    """)
-
-    s = PPLCStream(test_doc)
-    p = Paragraph(s, 0)
-    doc = document(test_doc)
-    assert shape(doc) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Paragraph, CodeBlock, CodeBlock]
-    assert to_html(doc) == dedent("""\
+            ```
+            and another code block!
+            ```
+            """)
+    doc = Document(test_doc)
+    assert shape(doc.nodes) == [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Paragraph, CodeBlock, CodeBlock]
+    assert doc.to_html() == dedent("""\
             <h1>Document Title</h1>
 
             <p>In <b>this paragraph</b> we see that we have multiple lines of a <i>single
@@ -373,10 +443,12 @@ def test_formatted_doc_1():
             <pre><code>
             and another code block!
             </code></pre>
-            """)
+            """).strip()
 
 def shape(document, text=False):
     result = []
+    if isinstance(document, Document):
+        document = document.nodes
     for thing in document:
         if not text and isinstance(thing, Text):
             continue
