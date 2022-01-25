@@ -448,6 +448,37 @@ class TestStonemark(TestCase):
                 </code></pre>
                 """).strip())
 
+    def test_html_chars(self):
+        test_doc = dedent("""\
+                =================
+                Some Maths Stuffs
+                =================
+
+                a = 4
+                b = 5
+
+                Is a < b ?  Yes.
+
+                Is a <= b ?  Yes.
+
+                Is a & b = a ?  Yes.
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(
+                doc,
+                dedent("""\
+                <h1>Some Maths Stuffs</h1>
+
+                <p>a = 4
+                b = 5</p>
+
+                <p>Is a < b ?  Yes.</p>
+
+                <p>Is a <= b ?  Yes.</p>
+
+                <p>Is a & b = a ?  Yes.</p>
+                """))
+
 def shape(document, text=False):
     result = []
     if isinstance(document, Document):
