@@ -93,7 +93,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 2, 1
+version = 0, 1, 2
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
