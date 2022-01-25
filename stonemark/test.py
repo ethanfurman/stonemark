@@ -465,7 +465,7 @@ class TestStonemark(TestCase):
                 """)
         doc = Document(test_doc)
         self.assertEqual(
-                doc,
+                doc.to_html(),
                 dedent("""\
                 <h1>Some Maths Stuffs</h1>
 

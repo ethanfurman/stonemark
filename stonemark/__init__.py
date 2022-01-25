@@ -1220,6 +1220,10 @@ def format(texts, allowed_styles, parent):
                 # superscript
                 marker = '^'
                 ws_needed = False
+            else:
+                # no possible match, continue on
+                pos += 1
+                continue
             # to be the start of formatting, the previous (non-mark) character must be white space
             if ws_needed and not ws(pos, forward=False):
                 pos += len(marker)
