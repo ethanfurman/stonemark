@@ -15,6 +15,7 @@ two space indentation.  Indented code blocks are not allowed after a list.
 
 Currently supported syntax:
 
+```
     Element                 StoneMark Syntax
 
                             ==========
@@ -41,11 +42,11 @@ Currently supported syntax:
 
     Link         (in-line)  [title](https://www.example.com)
 
-                (separate)  [title]  or [title][id]
+                (separate)  [title][id]
                             ...
-                            [title | id]: <https://www.example.com>
+                            [id]: <https://www.example.com>
 
-    Image                       ![alt text](image.jpg)
+    Image                   ![alt text](image.jpg)
 
 
     Fenced Code Block       ``` or ~~~
@@ -68,6 +69,7 @@ Currently supported syntax:
 
     Subscript               H~2~O
     Superscript             X^2^
+```
 '''
 
 requirements = ['aenum', 'scription']
@@ -78,11 +80,11 @@ make = []
 
 data = dict(
        name='stonemark',
-       version='0.1.2',
+       version='0.1.3a1',
        license='BSD License',
        description='a markup language similar to markdown',
        long_description=long_desc,
-       long_description_content_type='text/plain',
+       long_description_content_type='text/markdown',
        packages=['stonemark'],
        package_data={
            'stonemark': [

@@ -449,35 +449,64 @@ class TestStonemark(TestCase):
                 """).strip())
 
     def test_html_chars(self):
+        self.maxDiff = None
         test_doc = dedent("""\
-                =================
-                Some Maths Stuffs
-                =================
+                ===================
+                Some Maths & Stuffs
+                ===================
 
-                a = 4
-                b = 5
+                1) a = 4
+                2) b < 5
+                3) c > 1
+
+                To ~~everyone~~ *anyone* **who <hears> this** -- HELP![^jk]
+
+                ```
+                a < b >= c
+                ```
 
                 Is a < b ?  Yes.
 
-                Is a <= b ?  Yes.
+                Is a >= b ?  Yes.
 
                 Is a & b = a ?  Yes.
+
+                ![someone sayd, "OReily?"](https://www.fake.com/images/123.png)
+
+                ---
+
+                [^jk]: Just a joke!  I'm >fine<!
                 """)
         doc = Document(test_doc)
         self.assertEqual(
                 doc.to_html(),
                 dedent("""\
-                <h1>Some Maths Stuffs</h1>
+                <h1>Some Maths &amp; Stuffs</h1>
 
-                <p>a = 4
-                b = 5</p>
+                <ol>
+                <li>a = 4</li>
+                <li>b &lt; 5</li>
+                <li>c &gt; 1</li>
+                </ol>
 
-                <p>Is a < b ?  Yes.</p>
+                <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">jk</a></sup></p>
 
-                <p>Is a <= b ?  Yes.</p>
+                <pre><code>
+                a &lt; b &gt;= c
+                </code></pre>
 
-                <p>Is a & b = a ?  Yes.</p>
-                """))
+                <p>Is a &lt; b ?  Yes.</p>
+
+                <p>Is a &gt;= b ?  Yes.</p>
+
+                <p>Is a &amp; b = a ?  Yes.</p>
+
+                <img src="https://www.fake.com/images/123.png" alt="someone sayd, &quot;OReily?&quot;">
+
+                <hr>
+
+                <span id="footnote-jk"><sup>jk</sup> Just a joke!  I&#x27;m &gt;fine&lt;!</span>
+                """).strip(), doc.to_html())
 
 def shape(document, text=False):
     result = []

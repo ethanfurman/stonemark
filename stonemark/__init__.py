@@ -83,8 +83,9 @@ from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
 from aenum import Enum, Flag, IntFlag, auto, export
-from scription import Var, basestring
+from scription import Var, basestring, echo
 import aenum, re
+
 
 __all__ = [
         'FormatError', 'BadFormat', 'AmbiguousFormat', 'IndentError',
@@ -93,7 +94,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 2
+version = 0, 1, 3, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -410,7 +411,7 @@ class Heading(Node):
     def to_html(self):
         start = '<h%d>' % self.level
         end = '</h%d>' % self.level
-        return '%s%s%s' % (start, '\n'.join(self.items), end)
+        return '%s%s%s' % (start, escape('\n'.join(self.items), quote=True), end)
 
 
 class Paragraph(Node):
@@ -663,10 +664,9 @@ class CodeBlock(Node):
         return super(CodeBlock, self).finalize()
 
     def to_html(self):
-        result = ['<pre><code>']
-        result.extend(self.items)
-        result.append('</code></pre>')
-        return '\n'.join(result)
+        start = '<pre><code>\n'
+        end = '\n</code></pre>'
+        return start + escape('\n'.join(self.items), quote=True) + end
 
 class Rule(Node):
     type = RULE
@@ -733,7 +733,7 @@ class Text(Node):
                 start = start + open
                 end = close + end
         if self.text is not None:
-            body = self.text
+            body = escape(self.text, quote=True)
         else:
             result = []
             for txt in self.items:
@@ -755,7 +755,7 @@ class IDLink(Node):
 
     def __init__(self, marker, text, **kwds):
         super(IDLink, self).__init__(**kwds)
-        if marker[:1] != '^':
+        if marker[0] != '^':
             #external link
             self.type = 'link'
         else:
@@ -802,8 +802,8 @@ class IDLink(Node):
             super(IDLink, self).premature_end(line)
 
     def to_html(self):
-        mark = self.marker[1:]
-        start = '<span id="footnote-%s"><sup>%s</sup> ' % (mark, mark)
+        s_marker = self.marker[1:]
+        start = '<span id="footnote-%s"><sup>%s</sup> ' % (s_marker, s_marker)
         end = '</span>'
         result = [start]
         for item in self.items:
@@ -829,23 +829,24 @@ class Link(Text):
         self.marker = marker
         self.url = url
         if marker is not None:
-            if marker[:1] == '^':
+            s_marker = escape(marker[1:], quote=True)
+            if marker[0] == '^':
                 self.type = 'footnote'
-                self.text = '<sup><a href="#footnote-%s">%s</a></sup>' % (marker[1:], marker[1:])
+                self.text = '<sup><a href="#footnote-%s">%s</a></sup>' % (s_marker, s_marker)
                 self.links.setdefault(marker, []).append(self)
             else:
                 self.type = 'separate'
-                self.text = '<a href="%%s">%s</a>' % (text, )
+                self.text = '<a href="%%s">%s</a>' % (escape(text, quote=True), )
                 self.links.setdefault(marker, []).append(self)
         if url is not None:
             self.type = 'simple'
-            self.text = '<a href="%s">%s</a>' % (self.url, text)
+            self.text = '<a href="%s">%s</a>' % (escape(self.url, quote=True), escape(text, quote=True))
             self.final = True
 
     def to_html(self):
         if not self.final:
             raise MissingLink('link %r never found' % (self.marker, ))
-        return super(Link, self).to_html()
+        return self.text
 
 class BlockQuote(Node):
     type = QUOTE
@@ -1314,6 +1315,21 @@ class Document(object):
             result.append(node.to_html())
         return '\n\n'.join(result)
 
+
+def escape(s, quote=True):
+    """
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    s = s.replace("&", "&amp;") # Must be done first!
+    s = s.replace("<", "&lt;")
+    s = s.replace(">", "&gt;")
+    if quote:
+        s = s.replace('"', "&quot;")
+        s = s.replace('\'', "&#x27;")
+    return s
 
 
 match = Var(re.match)
