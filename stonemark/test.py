@@ -9,6 +9,16 @@ from stonemark import *
 from textwrap import dedent
 from unittest import TestCase, main
 
+
+class TestCase(TestCase):
+
+    def __init__(self, *args, **kwds):
+        regex = getattr(self, 'assertRaisesRegex', None)
+        if regex is None:
+            self.assertRaisesRegex = getattr(self, 'assertRaisesRegexp')
+        super(TestCase, self).__init__(*args, **kwds)
+
+
 class TestPPLCStream(TestCase):
 
     def test_get_char(self):
@@ -130,13 +140,9 @@ class TestStonemark(TestCase):
 
                 <p>Now a tiny paragraph.</p>
 
-                <pre><code>
-                and a code block!
-                </code></pre>
+                <pre><code>and a code block!</code></pre>
 
-                <pre><code>
-                and another code block!
-                </code></pre>
+                <pre><code>and another code block!</code></pre>
                 """).strip())
 
     def test_simple_doc_2(self):
@@ -177,9 +183,7 @@ class TestStonemark(TestCase):
                 <li>back to main list</li>
                 </ul>
 
-                <pre><code>
-                and another code block!
-                </code></pre>
+                <pre><code>and another code block!</code></pre>
                 """).strip())
 
     def test_simple_doc_3(self):
@@ -223,13 +227,9 @@ class TestStonemark(TestCase):
 
                 <h3>Now a tiny paragraph I mean header</h3>
 
-                <pre><code>
-                and a code block!
-                </code></pre>
+                <pre><code>and a code block!</code></pre>
 
-                <pre><code>
-                and another code block!
-                </code></pre>
+                <pre><code>and another code block!</code></pre>
                 """).strip())
 
     def test_simple_doc_4(self):
@@ -272,13 +272,9 @@ class TestStonemark(TestCase):
 
                 <p>Now a tiny paragraph.</p>
 
-                <pre><code>
-                and a code block!
-                </code></pre>
+                <pre><code>and a code block!</code></pre>
 
-                <pre><code>
-                and another code block!
-                </code></pre>
+                <pre><code>and another code block!</code></pre>
                 """).strip())
 
     def test_failure_1(self):
@@ -302,12 +298,8 @@ class TestStonemark(TestCase):
                 ```
                 """)
 
-        try:
+        with self.assertRaisesRegex(BadFormat, 'indented code blocks cannot follow lists .line 12.'):
             doc = Document(test_doc)
-        except BadFormat as exc:
-            self.assertTrue('line 12' in exc.msg)
-        else:
-            raise Exception('failure did not occur')
 
     def test_format_nesting_1(self):
         test_doc = dedent("""\
@@ -324,6 +316,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), "<p><b>this is <i>really important</i> important info</b></p>")
 
     def test_format_footnote(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 This is a paragraph talking about many things. [^1] The question is:
                 how are those many things related?
@@ -340,7 +333,7 @@ class TestStonemark(TestCase):
 
                 <hr>
 
-                <span id="footnote-1"><sup>1</sup> Okay, maybe just the one thing.</span>
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Okay, maybe just the one thing.</td></tr></table></div>
                 """).strip())
 
     def test_format_external_link_1(self):
@@ -439,13 +432,9 @@ class TestStonemark(TestCase):
 
                 <p>Now a <mark>tiny paragraph</mark> that talks about water (H<sub>2</sub>O) raised 2<sup>4</sup> power.</p>
 
-                <pre><code>
-                and a code block!
-                </code></pre>
+                <pre><code>and a code block!</code></pre>
 
-                <pre><code>
-                and another code block!
-                </code></pre>
+                <pre><code>and another code block!</code></pre>
                 """).strip())
 
     def test_html_chars(self):
@@ -491,9 +480,7 @@ class TestStonemark(TestCase):
 
                 <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">jk</a></sup></p>
 
-                <pre><code>
-                a &lt; b &gt;= c
-                </code></pre>
+                <pre><code>a &lt; b &gt;= c</code></pre>
 
                 <p>Is a &lt; b ?  Yes.</p>
 
@@ -505,8 +492,105 @@ class TestStonemark(TestCase):
 
                 <hr>
 
-                <span id="footnote-jk"><sup>jk</sup> Just a joke!  I&#x27;m &gt;fine&lt;!</span>
+                <div id="footnote-jk"><table><tr><td style="vertical-align: top"><sup>jk</sup></td><td>Just a joke!  I&apos;m &gt;fine&lt;!</td></tr></table></div>
                 """).strip(), doc.to_html())
+
+    def test_footnote_children(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                Step 1: Build your server
+                =========================
+
+                Either include the `OpenSSH` and `Postgres` packages when creating the server, or run the
+                following commands after the server is operational [^1]:
+
+                ``` sh
+                apt-get install openssh-server postgresql-9.1
+                # optional: denyhosts
+                ```
+
+                Now make sure your server has all the latest versions & patches by doing an update [^2]:
+
+                ``` sh
+                apt-get update
+                apt-get dist-upgrade
+                ```
+
+                Although not always essential it's probably a good idea to reboot your server now and make
+                sure it all comes back up and you can login via `ssh`.
+
+                Now we're ready to start the OpenERP install.
+
+                ----
+
+                [^1]: Creating the server, whether with dedicated hardware or as a virtual machine, is not
+                      covered by these instructions.
+
+                [^2]: If the `update` command results in `failed to fetch` errors, you can try these commands:
+
+                      ```
+                      rm -rf /var/lib/apt/lists/*
+                      apt-get clean
+                      apt-get update
+                      ```
+
+                      And try the `update` command again.  If you are now having missing key errors, try:
+
+                      ```sh
+                      gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv <MISSING_KEY>
+                      ```
+
+                      Then try the `update` command one more time.
+
+                      When `update` works correctly (no errors) run the `dist-upgrade` command.
+
+                ----
+
+                [Next](oe-install-step-2)
+                """)
+        expected = dedent("""\
+                <h2>Step 1: Build your server</h2>
+
+                <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
+                following commands after the server is operational <sup><a href="#footnote-1">1</a></sup>:</p>
+
+                <pre><code>apt-get install openssh-server postgresql-9.1
+                # optional: denyhosts</code></pre>
+
+                <p>Now make sure your server has all the latest versions &amp; patches by doing an update <sup><a href="#footnote-2">2</a></sup>:</p>
+
+                <pre><code>apt-get update
+                apt-get dist-upgrade</code></pre>
+
+                <p>Although not always essential it&apos;s probably a good idea to reboot your server now and make
+                sure it all comes back up and you can login via <code>ssh</code>.</p>
+
+                <p>Now we&apos;re ready to start the OpenERP install.</p>
+
+                <hr>
+
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Creating the server, whether with dedicated hardware or as a virtual machine, is not
+                covered by these instructions.</td></tr></table></div>
+
+                <div id="footnote-2"><table><tr><td style="vertical-align: top"><sup>2</sup></td><td>If the <code>update</code> command results in <code>failed to fetch</code> errors, you can try these commands:
+
+                <pre><code>rm -rf /var/lib/apt/lists/*
+                apt-get clean
+                apt-get update</code></pre>
+
+                <p>And try the <code>update</code> command again.  If you are now having missing key errors, try:</p>
+
+                <pre><code>gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv &lt;MISSING_KEY&gt;</code></pre>
+
+                <p>Then try the <code>update</code> command one more time.</p>
+
+                <p>When <code>update</code> works correctly (no errors) run the <code>dist-upgrade</code> command.</p></td></tr></table></div>
+
+                <hr>
+
+                <p><a href="oe-install-step-2">Next</a></p>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
 
 def shape(document, text=False):
     result = []

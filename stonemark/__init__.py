@@ -83,8 +83,8 @@ from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
 from aenum import Enum, Flag, IntFlag, auto, export
-from scription import Var, basestring, echo
-import aenum, re
+from scription import *
+import re
 
 
 __all__ = [
@@ -94,7 +94,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 3
+version = 0, 1, 4, 15
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -211,8 +211,7 @@ class BlankLineType(DocEnum):
 
 
 class FormatError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
+    pass
 
 class BadFormat(FormatError):
     pass
@@ -240,6 +239,7 @@ class Node(ABC):
     links = {}
 
     def __init__(self, stream, indent=0, parent=None):
+        self.node_id = next(UID)
         if parent is None:
             raise TypeError('parent cannot be None')
         self.parent = parent
@@ -263,7 +263,6 @@ class Node(ABC):
     def parse(self):
         items = self.items
         stream = self.stream
-        indent = self.current_indent
         reset = False
         #
         while stream:
@@ -282,7 +281,7 @@ class Node(ABC):
                     stream.skip_line()
                     continue
             else:
-                ws, line = line[:indent], line[indent:]
+                ws, line = line[:self.current_indent], line[self.current_indent:]
                 if ws.strip():
                     # no longer in this node
                     status = END
@@ -291,9 +290,10 @@ class Node(ABC):
                         self.premature_end('%s%s' % (ws, line))
                 else:
                     status = self.check(line)
-            if status is SAME and self.children and terminate_after_children:
-                raise BadFormat('ambiguous format at line %d' % stream.line_no)
+            if status is SAME and self.children and self.terminate_after_children:
+                raise BadFormat('ambiguous format at line %d:\n%r' % (stream.line_no, line))
             if status in (CONCLUDE, END):
+                self.reset = False
                 self.end_line = self.end_line or stream.line_no
                 if status is END:
                     self.end_line -= 1
@@ -314,14 +314,14 @@ class Node(ABC):
                 for child in self.allowed_blocks:
                     match, offset, kwds = child.is_type(line)
                     if match:
-                        new_indent = indent + offset
+                        new_indent = self.current_indent + offset
                         child = child(stream=stream, indent=new_indent, parent=self, **kwds)
                         items.append(child)
                         child.parse()
                         break
                 else:
                     # no valid child type found
-                    raise BadFormat('failed match at line %d' % stream.line_no)
+                    raise BadFormat('failed match at line %d\n%r' % (stream.line_no, line))
             else:
                 raise Exception('unknown status: %r' % (status, ))
         if self.reset:
@@ -388,7 +388,7 @@ class Heading(Node):
 
 
     def finalize(self):
-        line = self.items[-1]
+        line = self.items[-1].strip()
         chars = set(line)
         ch = chars.pop()
         # chars should now be empty
@@ -403,7 +403,7 @@ class Heading(Node):
 
     @classmethod
     def is_type(cls, line):
-        chars = set(line)
+        chars = set(line.strip())
         if len(chars) == 1 and len(line) >= 3 and chars.pop() == '=':
             return True, 0, {'level': 1}
         return NO_MATCH
@@ -411,7 +411,7 @@ class Heading(Node):
     def to_html(self):
         start = '<h%d>' % self.level
         end = '</h%d>' % self.level
-        return '%s%s%s' % (start, escape('\n'.join(self.items), quote=True), end)
+        return '%s%s%s' % (start, escape('\n'.join(self.items)), end)
 
 
 class Paragraph(Node):
@@ -454,10 +454,194 @@ class Paragraph(Node):
     def to_html(self):
         start = '<p>'
         end = '</p>'
-        return '%s%s%s' % (start, ''.join([i.to_html() for i in self.items]), end)
+        result = []
+        last_style = None
+        for txt in self.items:
+            last_style = txt.style
+            result.append(txt.to_html())
+        return '%s%s%s' % (start, ''.join(result), end)
+
+
+class CodeBlock(Node):
+    type = CODEBLOCK
+    allowed_text = PLAIN
+
+    def __init__(self, block_type, attrs, **kwds):
+        super(CodeBlock, self).__init__(**kwds)
+        self.block_type = block_type
+        self.language = None
+        self.attrs = None
+        return
+
+        attrs = attrs and attrs.strip()
+        if not attrs:
+            return
+        elif attrs[::(len(attrs)-1)] != '{}':
+            l_count = attrs.count('{')
+            r_count = attrs.count('}')
+            if l_count != r_count or l_count > 1 or r_count > 1:
+                raise BadFormat('mismatch {} in fenced block attributes %r' % attrs)
+            if attrs.startswith('.'):
+                raise BadFormat('leading . not allowed in %r when only language is specified' % attrs)
+            if ' ' in language:
+                raise BadFormat('invalid language specifier %r (no spaces allowed)' % language)
+            attrs = '{ .%s }' % attrs
+        #
+        errors = []
+        attrs = attrs[1:-1].strip().split()
+        if not attrs:
+            return
+        language = attrs[0]
+        attrs = attrs[1:]
+        if not language.startswith('.'):
+            raise BadForman('missing leading . in language specifier %r' % language)
+        self.language = language
+        for a in attrs:
+            if not a.startswith('.'):
+                raise BadForman('missing leading . in attribute %r' % a)
+        self.attrs = ''.join(attrs)
+
+    def check(self, line):
+        if self.block_type == 'indented':
+            self.items.append(line)
+            return SAME
+        else:
+            if not self.items:
+                self.items.append(line)
+                return SAME
+            self.items.append(line)
+            if line.rstrip() == self.block_type:
+                return CONCLUDE
+            return SAME
+
+    @classmethod
+    def is_type(cls, line):
+        if match(FCB, line):
+            block_type, attrs = match().groups()
+            return True, 0, {'block_type': block_type, 'attrs': attrs}
+        if match(CB, line):
+            return True, 4, {'block_type': 'indented', 'attrs': None}
+        return NO_MATCH
+
+    def finalize(self):
+        if self.block_type != 'indented':
+            if self.items[-1].rstrip() != self.block_type:
+                raise BadFormat('missing code block fence %r at line %d' % (self.block_type, self.end_line))
+            self.items.pop()
+            self.items.pop(0)
+        return super(CodeBlock, self).finalize()
+
+    def to_html(self):
+        code = '<code>'
+        pre = '<pre>'
+        if self.language:
+            code = '<pre><code class="language-%s">' % self.language
+        if self.attrs:
+            pre = '<pre class="%s">' % self.attrs
+        start = '%s%s' % (pre, code)
+        end = '</code></pre>'
+        return start + escape('\n'.join(self.items)) + end
+
+
+class Image(Node):
+    type = IMAGE
+    allowed_text = ALL_TEXT
+
+    def __init__(self, text, url, **kwds):
+        super(Image, self).__init__(**kwds)
+        self.items = format(text, allowed_styles=self.allowed_text, parent=self)
+        self.url = url
+
+    def check(self, line):
+        return CONCLUDE
+
+    @classmethod
+    def is_type(cls, line):
+        if match(IMAGE_LINK, line):
+            alt_text, url = match().groups()
+            return True, 0, {'text': alt_text, 'url': url}
+        return NO_MATCH
+
+    def to_html(self):
+        alt_text = []
+        last_style = None
+        for txt in self.items:
+            last_style = txt.style
+            alt_text.append(txt.to_html())
+        alt_text = ''.join(alt_text)
+        return '<img src="%s" alt="%s">' % (self.url, alt_text)
+
+
+class List(Node):
+    type = O_LIST | U_LIST
+    allowed_blocks = ()             # ListItem added after definition
+    blank_line = RESET
+    terminate_after_children = False
+
+    def __init__(self, marker, list_type, **kwds):
+        super(List, self).__init__(**kwds)
+        self.marker = marker
+        self.list_type = list_type
+        if list_type is U_LIST:
+            self.regex = UL
+        else:
+            self.regex = OL
+
+    def check(self, line):
+        if not match(self.regex, line):
+            return END
+        if self.list_type is U_LIST:
+            indent, marker, text = match().groups()
+        elif self.list_type is O_LIST:
+            indent, number, marker, text = match().groups()
+        indent = indent and len(indent) or 0
+        if indent == 2:
+            raise Exception('huh')
+        if marker == self.marker:
+            return CHILD
+        if self.reset:
+            # we hit a blank line first, end this list and start a new one
+            return END
+        else:
+            # different lists must be separated by a blank line
+            raise BadFormat('attempt to change list marker inside a list at line %d' % self.stream.line_no)
+
+    @classmethod
+    def is_type(cls, line):
+        if match(UL, line):
+            indent, marker, text = match().groups()
+            indent = indent and len(indent) or 0
+            return True, indent, {'marker': marker, 'list_type': U_LIST}
+        elif match(OL, line):
+            indent, number, marker, text = match().groups()
+            indent = indent and len(indent) or 0
+            return True, indent, {'marker': marker, 'list_type': O_LIST}
+        return NO_MATCH
+
+    def premature_end(self, line):
+        if isinstance(self.parent, ListItem):
+            # if ending non-blank line is a part of an outer list, we're okay
+            pass
+        else:
+            super(List, self).premature_end(line)
+
+    def to_html(self, indent=0):
+        spacing = ' ' * indent
+        if self.regex == UL:
+            start = spacing + '<ul>'
+            end = spacing + '</ul>'
+        else:
+            start = spacing + '<ol>'
+            end = spacing + '</ol>'
+        result = [start]
+        for item in self.items:
+            result.append(spacing + item.to_html())
+        result.append(end)
+        return '\n'.join(result)
 
 class ListItem(Node):
     type = LISTITEM
+    allowed_blocks = CodeBlock, Image, List, Paragraph
     allowed_text = ALL_TEXT
     regex = None
     marker = None
@@ -545,7 +729,12 @@ class ListItem(Node):
         end =  '%s</li>' % spacing
         result = []
         list_item = []
+        last_style = None
         for i in self.items:
+            if not isinstance(i, Text):
+                last_style = None
+            else:
+                last_style = i.style
             if not isinstance(i, List):
                 list_item.append(spacing+i.to_html())
             else:
@@ -553,120 +742,7 @@ class ListItem(Node):
         result.insert(0, start + ''.join(list_item) + end)
         return ''.join(result)
 
-
-class List(Node):
-    type = O_LIST | U_LIST
-    allowed_blocks = ListItem,
-    blank_line = RESET
-    terminate_after_children = False
-
-    def __init__(self, marker, list_type, **kwds):
-        super(List, self).__init__(**kwds)
-        self.marker = marker
-        self.list_type = list_type
-        if list_type is U_LIST:
-            self.regex = UL
-        else:
-            self.regex = OL
-
-    def check(self, line):
-        if not match(self.regex, line):
-            return END
-        if self.list_type is U_LIST:
-            indent, marker, text = match().groups()
-        elif self.list_type is O_LIST:
-            indent, number, marker, text = match().groups()
-        indent = indent and len(indent) or 0
-        if indent == 2:
-            raise Exception('huh')
-        if marker == self.marker:
-            return CHILD
-        if self.reset:
-            # we hit a blank line first, end this list and start a new one
-            return END
-        else:
-            # different lists must be separated by a blank line
-            raise BadFormat('attempt to change list marker inside a list at line %d' % self.stream.line_no)
-
-    @classmethod
-    def is_type(cls, line):
-        if match(UL, line):
-            indent, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': marker, 'list_type': U_LIST}
-        elif match(OL, line):
-            indent, number, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': marker, 'list_type': O_LIST}
-        return NO_MATCH
-
-    def premature_end(self, line):
-        if isinstance(self.parent, ListItem):
-            # if ending non-blank line is a part of an outer list, we're okay
-            pass
-        else:
-            super(List, self).premature_end(line)
-
-    def to_html(self, indent=0):
-        spacing = ' ' * indent
-        if self.regex == UL:
-            start = spacing + '<ul>'
-            end = spacing + '</ul>'
-        else:
-            start = spacing + '<ol>'
-            end = spacing + '</ol>'
-        result = [start]
-        for item in self.items:
-            result.append(spacing + item.to_html())
-        result.append(end)
-        return '\n'.join(result)
-
-ListItem.allowed_blocks = List,
-
-
-class CodeBlock(Node):
-    type = CODEBLOCK
-    allowed_text = PLAIN
-
-    def __init__(self, block_type, language, **kwds):
-        super(CodeBlock, self).__init__(**kwds)
-        self.block_type = block_type
-        self.language = language
-
-    def check(self, line):
-        if self.block_type == 'indented':
-            self.items.append(line)
-            return SAME
-        else:
-            if not self.items:
-                self.items.append(line)
-                return SAME
-            self.items.append(line)
-            if line.rstrip() == self.block_type:
-                return CONCLUDE
-            return SAME
-
-    @classmethod
-    def is_type(cls, line):
-        if match(FCB, line):
-            block_type, language = match().groups()
-            return True, 0, {'block_type': block_type, 'language': language}
-        if match(CB, line):
-            return True, 4, {'block_type': 'indented', 'language': None}
-        return NO_MATCH
-
-    def finalize(self):
-        if self.block_type != 'indented':
-            if self.items[-1].rstrip() != self.block_type:
-                raise BadFormat('missing code block fence %r at line %d' % (self.block_type, self.end_line))
-            self.items.pop()
-            self.items.pop(0)
-        return super(CodeBlock, self).finalize()
-
-    def to_html(self):
-        start = '<pre><code>\n'
-        end = '\n</code></pre>'
-        return start + escape('\n'.join(self.items), quote=True) + end
+List.allowed_blocks = ListItem,
 
 class Rule(Node):
     type = RULE
@@ -697,7 +773,7 @@ class Text(Node):
     type = TEXT
     allowed_text = ALL_TEXT
 
-    def __init__(self, text=None, single='!', style=PLAIN, **kwds): #, allowed=PLAIN, parent=None):
+    def __init__(self, text=None, single='!', style=PLAIN, **kwds):
         if 'stream' not in kwds:
             kwds['stream'] = None
         self.text = text
@@ -718,7 +794,6 @@ class Text(Node):
         start = ''
         end = ''
         for mark, open, close in (
-                # (BOLD_ITALIC, '<b><i>', '</i></b>'),
                 (BOLD, '<b>', '</b>'),
                 (ITALIC, '<i>', '</i>'),
                 (STRIKE, '<del>', '</del>'),
@@ -733,10 +808,12 @@ class Text(Node):
                 start = start + open
                 end = close + end
         if self.text is not None:
-            body = escape(self.text, quote=True)
+            body = escape(self.text)
         else:
             result = []
+            last_style = None
             for txt in self.items:
+                last_style = txt.style
                 try:
                     result.append(txt.to_html())
                 except AttributeError:
@@ -750,26 +827,32 @@ class Text(Node):
 
 class IDLink(Node):
     type = LINK
+    allowed_blocks = CodeBlock, List, Image, Paragraph
     allowed_text = ALL_TEXT
     blank_line = RESET
+    blank_line_required = False
 
     def __init__(self, marker, text, **kwds):
         super(IDLink, self).__init__(**kwds)
-        if marker[0] != '^':
+        if marker[0] == '^':
+            self.type = 'footnote'
+        else:
             #external link
             self.type = 'link'
-        else:
-            self.type = 'footnote'
         self.marker = marker
         self.text = text
 
     def check(self, line):
         if not self.items:
+            self.current_indent += len(self.marker) + 4
             self.items.append(self.text)
             self.text = None
             return SAME
         if match(ID_LINK, line):
             return END
+        self.items.append('\n')
+        if self.reset:
+            return CHILD
         self.items.append(line)
         return SAME
 
@@ -780,9 +863,8 @@ class IDLink(Node):
                 link.final = True
             keep = True
         else:
-            self.text = ''.join(self.items)
             for link in self.links[self.marker]:
-                link.text %= self.text
+                link.text %= ''.join(self.items)
                 link.final = True
             keep = False
         return keep
@@ -803,13 +885,16 @@ class IDLink(Node):
 
     def to_html(self):
         s_marker = self.marker[1:]
-        start = '<span id="footnote-%s"><sup>%s</sup> ' % (s_marker, s_marker)
-        end = '</span>'
-        result = [start]
+        start = '<div id="footnote-%s"><table><tr><td style="vertical-align: top"><sup>%s</sup></td><td>' % (s_marker, s_marker)
+        end = '</td></tr></table></div>'
+        result = []
         for item in self.items:
+            if self.type == 'footnote' and not isinstance(item, Text):
+                result.append('\n')
             result.append(item.to_html())
-        result.append(end)
-        return ''.join(result)
+        if result[-1][-1] == '\n':
+            result[-1][-1] = ''
+        return "%s%s%s" % (start, ''.join(result), end)
 
 
 class Link(Text):
@@ -825,22 +910,21 @@ class Link(Text):
         marker: identifier for footnotes and separate external links
         """
         super(Link, self).__init__(**kwds)
-        # self.items = text.split('\n')
         self.marker = marker
         self.url = url
         if marker is not None:
-            s_marker = escape(marker[1:], quote=True)
+            s_marker = escape(marker[1:])
             if marker[0] == '^':
                 self.type = 'footnote'
                 self.text = '<sup><a href="#footnote-%s">%s</a></sup>' % (s_marker, s_marker)
                 self.links.setdefault(marker, []).append(self)
             else:
                 self.type = 'separate'
-                self.text = '<a href="%%s">%s</a>' % (escape(text, quote=True), )
+                self.text = '<a href="%%s">%s</a>' % (escape(text), )
                 self.links.setdefault(marker, []).append(self)
         if url is not None:
             self.type = 'simple'
-            self.text = '<a href="%s">%s</a>' % (escape(self.url, quote=True), escape(text, quote=True))
+            self.text = '<a href="%s">%s</a>' % (escape(self.url), escape(text))
             self.final = True
 
     def to_html(self):
@@ -858,32 +942,6 @@ class BlockQuote(Node):
         super(BlockQuote, self).render()
         output.write('</blockquote>\n')
 
-
-class Image(Node):
-    type = IMAGE
-    allowed_text = ALL_TEXT
-
-    def __init__(self, text, url, **kwds):
-        super(Image, self).__init__(**kwds)
-        self.items = format(text, allowed_styles=self.allowed_text, parent=self)
-        self.url = url
-
-    def check(self, line):
-        return CONCLUDE
-
-    @classmethod
-    def is_type(cls, line):
-        if match(IMAGE_LINK, line):
-            alt_text, url = match().groups()
-            return True, 0, {'text': alt_text, 'url': url}
-        return NO_MATCH
-
-    def to_html(self):
-        alt_text = []
-        for item in self.items:
-            alt_text.append(item.to_html())
-        alt_text = ''.join(alt_text)
-        return '<img src="%s" alt="%s">' % (self.url, alt_text)
 
 class ID(Node):
     type = ID
@@ -1095,9 +1153,7 @@ def format(texts, allowed_styles, parent):
                 end = find("`", "`", start+1)
                 if end == -1:
                     # oops
-                    raise BadFormat(
-                            'failed to find matching "`" starting near %r'
-                            % (chars[pos-10:pos+10], ))
+                    raise BadFormat( 'failed to find matching "`" starting near %r' % (chars[pos-10:pos+10], ))
                 chars[start:end+1] = [Text(
                         ''.join([c.char for c in chars[start+1:end]]),
                         style=CODE,
@@ -1113,7 +1169,6 @@ def format(texts, allowed_styles, parent):
                     raise BadFormat(
                             "failed to find matching `)` starting near %r"
                             % (chars[pos-10:pos+10], ))
-                # chars[start+1:end] = [Text(''.join(format(chars[start+1:end], allowed_styles)))]
                 chars[start+1:end] = format([chars[start+1:end]], allowed_styles, parent=parent)
                 pos += 3
                 continue
@@ -1127,7 +1182,6 @@ def format(texts, allowed_styles, parent):
                         raise BadFormat(
                                 "failed to find matching `]]` starting near %r"
                                 % (chars[pos-10:pos+10], ))
-                    # chars[start+1:end+1] = [Text(''.join(format(chars[start+1:end+1], allowed_styles)))]
                     chars[start+1:end+1] = format([chars[start+1:end+1]], allowed_styles, parent=parent)
                     pos += 3
                     continue
@@ -1303,7 +1357,7 @@ class Document(object):
                     node = nt(stream=stream, indent=indent, parent=self, **kwds)
                     break
             else:
-                raise Exception('no match found at line %d' % stream.line_no)
+                raise Exception('no match found at line %d\n%r' % (stream.line_no, line))
             keep = node.parse()
             if keep:
                 nodes.append(node)
@@ -1328,10 +1382,15 @@ def escape(s, quote=True):
     s = s.replace(">", "&gt;")
     if quote:
         s = s.replace('"', "&quot;")
-        s = s.replace('\'', "&#x27;")
+        s = s.replace('\'', "&apos;")
     return s
 
-
+def UID():
+    i = 0
+    while True:
+        i += 1
+        yield i
+UID = UID()
 match = Var(re.match)
 
 UL = r'(  )?(-|\+|\*) (.*)'

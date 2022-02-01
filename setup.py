@@ -80,7 +80,7 @@ make = []
 
 data = dict(
        name='stonemark',
-       version='0.1.3',
+       version='0.1.4a15',
        license='BSD License',
        description='a markup language similar to markdown',
        long_description=long_desc,
@@ -100,7 +100,7 @@ data = dict(
            'console_scripts': ['stonemark = stonemark.__main__:Main'],
            },
        classifiers=[
-            'Development Status :: 4 - Beta',
+            'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
             'License :: OSI Approved :: BSD License',
             'Operating System :: OS Independent',
