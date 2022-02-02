@@ -4,8 +4,8 @@ Tests for StoneMark
 
 from __future__ import unicode_literals
 
-from stonemark import PPLCStream
-from stonemark import *
+from . import PPLCStream
+from . import *
 from textwrap import dedent
 from unittest import TestCase, main
 
@@ -590,6 +590,59 @@ class TestStonemark(TestCase):
 
                 <p><a href="oe-install-step-2">Next</a></p>
                 """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_optional_blank_lines(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                ===================
+                Pulse Specification
+                ===================
+
+                Tracking
+                ========
+
+                - frequency
+                  - daily
+                  - weekly
+                  - monthly
+                  - yearly
+
+                - status
+                  - pass/fail
+                  - percentage
+                  - text
+                  - tripline
+
+                - device/job
+                  - 11.16/sync
+                  - 11.111/backup""")
+        expected = dedent("""\
+                <h1>Pulse Specification</h1>
+
+                <h2>Tracking</h2>
+
+                <ul>
+                <li>frequency</li>
+                    <ul>
+                    <li>daily</li>
+                    <li>weekly</li>
+                    <li>monthly</li>
+                    <li>yearly</li>
+                    </ul>
+                <li>status</li>
+                    <ul>
+                    <li>pass/fail</li>
+                    <li>percentage</li>
+                    <li>text</li>
+                    <li>tripline</li>
+                    </ul>
+                <li>device/job</li>
+                    <ul>
+                    <li>11.16/sync</li>
+                    <li>11.111/backup</li>
+                    </ul>
+                </ul>""").strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
 def shape(document, text=False):

@@ -94,7 +94,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 4, 15
+version = 0, 1, 4, 18
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -324,7 +324,7 @@ class Node(ABC):
                     raise BadFormat('failed match at line %d\n%r' % (stream.line_no, line))
             else:
                 raise Exception('unknown status: %r' % (status, ))
-        if self.reset:
+        else:
             keep = self.finalize()
             self.reset = False
         return keep
