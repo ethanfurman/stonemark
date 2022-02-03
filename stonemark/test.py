@@ -658,6 +658,23 @@ class TestStonemark(TestCase):
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
+    def test_duplicate_footnote(self):
+        test_doc = dedent("""\
+                Here is `some code`[^hah].
+
+                And then another [^hah].
+
+                [^hah]: and a footnote
+                """)
+        expected = dedent("""\
+                <p>Here is <code>some code</code><sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+
+                <p>And then another <sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+
+                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
     def test_parens(self):
         test_doc = dedent("""\
                 Here is (a parenthetical)[^hah].
@@ -681,6 +698,23 @@ class TestStonemark(TestCase):
                 <p>Here is [editor: wow]<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_code_after_link(self):
+        test_doc = dedent("""\
+                [^1] `some code` and 
+
+                [wiki_page] `204` is the `No Content` status code, and indicates success.
+
+                [^1]: blah
+                """)
+        expected = dedent("""\
+                <p><sup><a href="#footnote-1">[1]</a></sup> <code>some code</code> and</p>
+
+                <p><a href="wiki_page">wiki_page</a> <code>204</code> is the <code>No Content</code> status code, and indicates success.</p>
+
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>blah</td></tr></table></div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 

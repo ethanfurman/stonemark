@@ -1196,14 +1196,14 @@ def format(texts, allowed_styles, parent):
                     marker = ''.join([c.char for c in chars[start+1:end]])
                     fn = Link(marker=marker, parent=parent)
                     chars[start:end+1] = [fn]
-                    pos = end + 1
+                    pos += 1
                     continue
                 elif end+1 == len(chars) or peek_char(end+1) not in '[(':
                     # simple wiki page link
                     text = ''.join([c.char for c in chars[start+1:end]])
                     link = Link(text=text, url=text, parent=parent)
                     chars[start:end+1] = [link]
-                    pos = end + 1
+                    pos += 1
                     continue
                 else:
                     text = ''.join([c.char for c in chars[start+1:end]])
