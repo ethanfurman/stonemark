@@ -3,6 +3,7 @@ from scription import *
 from antipathy import Path
 from . import Document
 
+
 @Command(
         source=Spec('name of source file to convert', type=Path),
         target=Spec('name of output file [default: source base name with .html extension]', default='', type=Path),

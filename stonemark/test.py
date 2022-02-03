@@ -328,7 +328,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph, Rule, IDLink])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about many things. <sup><a href="#footnote-1">1</a></sup> The question is:
+                <p>This is a paragraph talking about many things. <sup><a href="#footnote-1">[1]</a></sup> The question is:
                 how are those many things related?</p>
 
                 <hr>
@@ -478,7 +478,7 @@ class TestStonemark(TestCase):
                 <li>c &gt; 1</li>
                 </ol>
 
-                <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">jk</a></sup></p>
+                <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">[jk]</a></sup></p>
 
                 <pre><code>a &lt; b &gt;= c</code></pre>
 
@@ -552,12 +552,12 @@ class TestStonemark(TestCase):
                 <h2>Step 1: Build your server</h2>
 
                 <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
-                following commands after the server is operational <sup><a href="#footnote-1">1</a></sup>:</p>
+                following commands after the server is operational <sup><a href="#footnote-1">[1]</a></sup>:</p>
 
                 <pre><code>apt-get install openssh-server postgresql-9.1
                 # optional: denyhosts</code></pre>
 
-                <p>Now make sure your server has all the latest versions &amp; patches by doing an update <sup><a href="#footnote-2">2</a></sup>:</p>
+                <p>Now make sure your server has all the latest versions &amp; patches by doing an update <sup><a href="#footnote-2">[2]</a></sup>:</p>
 
                 <pre><code>apt-get update
                 apt-get dist-upgrade</code></pre>
@@ -644,6 +644,46 @@ class TestStonemark(TestCase):
                     </ul>
                 </ul>""").strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_code_with_footnote(self):
+        test_doc = dedent("""\
+                Here is `some code`[^hah].
+
+                [^hah]: and a footnote
+                """)
+        expected = dedent("""\
+                <p>Here is <code>some code</code><sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+
+                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_parens(self):
+        test_doc = dedent("""\
+                Here is (a parenthetical)[^hah].
+
+                [^hah]: and a footnote
+                """)
+        expected = dedent("""\
+                <p>Here is (a parenthetical)<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+
+                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_editorial_comment(self):
+        test_doc = dedent("""\
+                Here is [[editor: wow]][^hah].
+
+                [^hah]: and a footnote
+                """)
+        expected = dedent("""\
+                <p>Here is [editor: wow]<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+
+                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
 
 def shape(document, text=False):
     result = []

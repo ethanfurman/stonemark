@@ -904,7 +904,6 @@ class Link(Text):
 
     def __init__(self, text=None, url=None, marker=None, **kwds):
         """
-        type: which kind of link
         text: stuff between the <a href...> and the </a>
         url: stuff in the href="..."
         marker: identifier for footnotes and separate external links
@@ -916,7 +915,7 @@ class Link(Text):
             s_marker = escape(marker[1:])
             if marker[0] == '^':
                 self.type = 'footnote'
-                self.text = '<sup><a href="#footnote-%s">%s</a></sup>' % (s_marker, s_marker)
+                self.text = '<sup><a href="#footnote-%s">[%s]</a></sup>' % (s_marker, s_marker)
                 self.links.setdefault(marker, []).append(self)
             else:
                 self.type = 'separate'
@@ -1064,9 +1063,8 @@ class PPLCStream(object):
             self.get_line()
 
 def format(texts, allowed_styles, parent):
-    def f(open, close=None, start=0, end=None, ws_needed=True):
-        if end is None:
-            end = len(chars)
+    def f(open, close=None, start=0, ws_needed=True):
+        end = len(chars)
         match_len = len(close or open)
         open_count = 1
         close_count = 0
@@ -1150,7 +1148,7 @@ def format(texts, allowed_styles, parent):
                 continue
             if ch.char == "`":
                 # code
-                end = find("`", "`", start+1)
+                end = find("`", "`", start+1, False)
                 if end == -1:
                     # oops
                     raise BadFormat( 'failed to find matching "`" starting near %r' % (chars[pos-10:pos+10], ))
@@ -1159,11 +1157,11 @@ def format(texts, allowed_styles, parent):
                         style=CODE,
                         parent=parent,
                         )]
-                pos += 3
+                pos += 1
                 continue
             if ch.char == '(':
                 # parens
-                end = find('(', ')', start+1)
+                end = find('(', ')', start+1, False)
                 if end == -1:
                     # oops
                     raise BadFormat(
@@ -1174,19 +1172,19 @@ def format(texts, allowed_styles, parent):
                 continue
             if ch.char == '[':
                 # link
-                if pos+1 < len(chars) and chars[pos+1].char == '[':
+                if ''.join(c.char for c in chars[pos:pos+2]) == '[[':
                     # possible editoral comment
-                    end = find('[[', ']]', pos+2)
+                    end = find('[[', ']]', pos+2, False)
                     if end == -1:
                         # oops
                         raise BadFormat(
                                 "failed to find matching `]]` starting near %r"
                                 % (chars[pos-10:pos+10], ))
-                    chars[start+1:end+1] = format([chars[start+1:end+1]], allowed_styles, parent=parent)
+                    chars[start+1:end+1] = format([chars[start+2:end]], allowed_styles, parent=parent)
                     pos += 3
                     continue
                 # look for closing bracket and process link
-                end = find('[', ']', start+1, None, False)
+                end = find('[', ']', start+1, False)
                 if end == -1:
                     # oops
                     raise BadFormat(
@@ -1288,7 +1286,7 @@ def format(texts, allowed_styles, parent):
                 pos += len(marker)
                 continue
             # at this point, we have a valid starting marker, but only if we can find a valid ending marker as well
-            end = find(marker, marker, pos+len(marker), None, ws_needed)
+            end = find(marker, marker, pos+len(marker), ws_needed)
             if end == -1:
                 # found nothing
                 pos += len(marker)
