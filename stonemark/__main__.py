@@ -9,6 +9,8 @@ from . import Document
         target=Spec('name of output file [default: source base name with .html extension]', default='', type=Path),
         )
 def stonemark(source, target):
+    if not source.exists():
+        abort("'%s' does not exist" % source)
     if target == '':
         target = source.strip_ext() + '.html'
     elif target.isdir():

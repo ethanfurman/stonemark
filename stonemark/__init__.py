@@ -285,7 +285,7 @@ class Node(ABC):
                 if ws.strip():
                     # no longer in this node
                     status = END
-                    if self.blank_line_required:
+                    if self.blank_line_required and not self.reset:
                         # maybe raise, maybe okay
                         self.premature_end('%s%s' % (ws, line))
                 else:
@@ -1063,35 +1063,48 @@ class PPLCStream(object):
             self.get_line()
 
 def format(texts, allowed_styles, parent):
-    def f(open, close=None, start=0, ws_needed=True):
+    def f(open, close, start=0, ws_needed=True):
+        print('in f: %r' % chars[start:])
         end = len(chars)
         match_len = len(close or open)
         open_count = 1
         close_count = 0
         i = start
         while i < end:
+            # print('open: %d  close: %d' % (open_count, close_count))
             if chars[i].char == '\\':
                 i += 2
                 continue
             possible = ''.join(c.char for c in chars[i:i+match_len])
+            # print('possible: %r' % (possible, ))
             if possible == close:
+                # count must be the same
+                # whitespace setting must match
                 if not ws_needed:
-                    # simple search, found it
-                    return i
-                elif ws(i+1):
-                    # check if valid close tag, if that fails check for valid open tag
+                    if open == close:
+                        # count doesn't matter
+                        # whitespace doesn't matter
+                        return i
                     close_count += 1
-                elif possible == open and ws(i, forward=False):
-                    open_count += 1
-                    i += match_len - 1
-            elif possible == open:
-                # if open != close, check for open condition now
+                    if open_count == close_count:
+                        return i
+                # check for needed whitespace
+                if ws(i+1):
+                    close_count += 1
+                    if open_count == close_count:
+                        return i
+                # nope, check for valid open tag
+                # elif possible == open and ws(i, forward=False):
+                #     open_count += 1
+                #     i += match_len - 1
+            # check for valid open tag
+            if possible == open:
                 if not ws_needed or ws(i, forward=False):
                     open_count += 1
                     i += match_len - 1
             # if counts are equal, we have our match
-            if open_count == close_count:
-                return i
+            # if open_count == close_count:
+            #     return i
             i += 1
         else:
             return -1
@@ -1151,7 +1164,7 @@ def format(texts, allowed_styles, parent):
                 end = find("`", "`", start+1, False)
                 if end == -1:
                     # oops
-                    raise BadFormat( 'failed to find matching "`" starting near %r' % (chars[pos-10:pos+10], ))
+                    raise BadFormat( 'failed to find matching "`" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                 chars[start:end+1] = [Text(
                         ''.join([c.char for c in chars[start+1:end]]),
                         style=CODE,
@@ -1165,8 +1178,8 @@ def format(texts, allowed_styles, parent):
                 if end == -1:
                     # oops
                     raise BadFormat(
-                            "failed to find matching `)` starting near %r"
-                            % (chars[pos-10:pos+10], ))
+                            "failed to find matching `)` starting near %r between %r and %r"
+                            % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                 chars[start+1:end] = format([chars[start+1:end]], allowed_styles, parent=parent)
                 pos += 3
                 continue
@@ -1178,8 +1191,8 @@ def format(texts, allowed_styles, parent):
                     if end == -1:
                         # oops
                         raise BadFormat(
-                                "failed to find matching `]]` starting near %r"
-                                % (chars[pos-10:pos+10], ))
+                                "failed to find matching `]]` starting near %r between %r and %r"
+                                % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                     chars[start+1:end+1] = format([chars[start+2:end]], allowed_styles, parent=parent)
                     pos += 3
                     continue
@@ -1188,8 +1201,8 @@ def format(texts, allowed_styles, parent):
                 if end == -1:
                     # oops
                     raise BadFormat(
-                            "failed to find matching `]` starting near %r"
-                            % (chars[pos-10:pos+10], ))
+                            "failed to find matching `]` starting near %r between %r and %r"
+                            % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                 # what kind of link do we have?
                 if chars[start+1].char == '^':
                     # a foot note
@@ -1214,8 +1227,8 @@ def format(texts, allowed_styles, parent):
                         if end == -1:
                             # oops
                             raise BadFormat(
-                                    "failed to find matching `]` starting near %r"
-                                    % (chars[pos-10:pos+10], ))
+                                    "failed to find matching `]` starting near %r between %r and %r"
+                                    % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                         marker = ''.join([c.char for c in chars[second:end]])
                         link = Link(text=text, marker=marker, parent=parent)
                         chars[start:end+1] = [link]
@@ -1227,8 +1240,8 @@ def format(texts, allowed_styles, parent):
                         if end == -1:
                             # oops
                             raise BadFormat(
-                                    "failed to find matching `)` starting near %r"
-                                    % (chars[pos-10:pos+10], ))
+                                    "failed to find matching `)` starting near %r between %r and %r"
+                                    % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                         url = ''.join([c.char for c in chars[second:end]])
                         link = Link(text=text, url=url, parent=parent)
                         chars[start:end+1] = [link]
