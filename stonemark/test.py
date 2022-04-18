@@ -101,6 +101,7 @@ class TestPPLCStream(TestCase):
 class TestStonemark(TestCase):
     def test_simple_doc_1(self):
         test_doc = dedent("""\
+        ==============
         Document Title
         ==============
 
@@ -124,7 +125,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Heading,  Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem, ]]], Paragraph, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h2>Document Title</h2>
+                <h1>Document Title</h1>
 
                 <p>In this paragraph we see that we have multiple lines of a single
                 sentence.</p>
@@ -211,7 +212,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h2>Document Title</h2>
+                <h1>Document Title</h1>
 
                 <p>In this paragraph we see that we have multiple lines of a single
                 sentence.</p>
@@ -234,9 +235,8 @@ class TestStonemark(TestCase):
 
     def test_simple_doc_4(self):
         test_doc = dedent("""\
-                ==============
                 Document Title
-                ==============
+                --------------
 
                 In this paragraph we see that we have multiple lines of a single
                 sentence.
@@ -258,7 +258,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem], Rule, Paragraph, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h1>Document Title</h1>
+                <h3>Document Title</h3>
 
                 <p>In this paragraph we see that we have multiple lines of a single
                 sentence.</p>
@@ -549,7 +549,7 @@ class TestStonemark(TestCase):
                 [Next](oe-install-step-2)
                 """)
         expected = dedent("""\
-                <h2>Step 1: Build your server</h2>
+                <h1>Step 1: Build your server</h1>
 
                 <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
                 following commands after the server is operational <sup><a href="#footnote-1">[1]</a></sup>:</p>

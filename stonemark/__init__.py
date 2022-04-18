@@ -236,9 +236,10 @@ class Node(ABC):
     parent = None
     children = False
     terminate_after_children = True
+    sequence = None
     links = {}
 
-    def __init__(self, stream, indent=0, parent=None):
+    def __init__(self, stream, indent=0, sequence=None, parent=None):
         self.node_id = next(UID)
         if parent is None:
             raise TypeError('parent cannot be None')
@@ -249,6 +250,7 @@ class Node(ABC):
         self.items = []
         self.final = False
         self.reset = None
+        self.sequence = sequence
         if stream is not None:
             self.start_line = stream.line_no
         else:
@@ -398,7 +400,10 @@ class Heading(Node):
             raise BadFormat('Level 1 Headings must end with at least three = characters')
         self.items.pop()
         if not self.level:
-            self.level = 2 if ch == '=' else 3
+            if self.sequence == 0 and ch == '=':
+                self.level = 1
+            else:
+                self.level = 2 if ch == '=' else 3
         return super(Heading, self).finalize()
 
     @classmethod
@@ -1064,19 +1069,16 @@ class PPLCStream(object):
 
 def format(texts, allowed_styles, parent):
     def f(open, close, start=0, ws_needed=True):
-        print('in f: %r' % chars[start:])
         end = len(chars)
         match_len = len(close or open)
         open_count = 1
         close_count = 0
         i = start
         while i < end:
-            # print('open: %d  close: %d' % (open_count, close_count))
             if chars[i].char == '\\':
                 i += 2
                 continue
             possible = ''.join(c.char for c in chars[i:i+match_len])
-            # print('possible: %r' % (possible, ))
             if possible == close:
                 # count must be the same
                 # whitespace setting must match
@@ -1354,6 +1356,7 @@ class Document(object):
         blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph
         stream = PPLCStream(text)
         nodes = []
+        count = 0
         while stream.skip_blank_lines():
             for nt in blocks:
                 line = stream.current_line.rstrip()
@@ -1365,7 +1368,8 @@ class Document(object):
                     elif nodes and nt is CodeBlock:
                         if indent != 0 and isinstance(nodes[-1], List):
                             raise BadFormat('indented code blocks cannot follow lists (line %d)' % stream.line_no)
-                    node = nt(stream=stream, indent=indent, parent=self, **kwds)
+                    node = nt(stream=stream, indent=indent, parent=self, sequence=count, **kwds)
+                    count += 1
                     break
             else:
                 raise Exception('no match found at line %d\n%r' % (stream.line_no, line))
