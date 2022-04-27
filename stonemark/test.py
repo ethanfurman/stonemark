@@ -758,6 +758,76 @@ class TestStonemark(TestCase):
         self.assertEqual(Document(test_doc).to_html(), expected)
 
 
+    def test_coded_headers(self):
+        test_doc = dedent("""\
+                ================
+                `Document Title`
+                ================
+
+                In this paragraph we see that we have multiple lines of a single
+                sentence.
+
+                - plus a two-line
+                - list for good measure
+                  + and a sublist
+                  + for really good measure
+
+                `stuff`
+                -------
+
+                Now a tiny paragraph.
+
+                    and a code block!
+
+                ```
+                and another code block!
+                ```
+                """)
+
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc.nodes), [Heading,  Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem, ]]], Heading, Paragraph, CodeBlock, CodeBlock])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <h1><code>Document Title</code></h1>
+
+                <p>In this paragraph we see that we have multiple lines of a single
+                sentence.</p>
+
+                <ul>
+                <li>plus a two-line</li>
+                <li>list for good measure</li>
+                    <ul>
+                    <li>and a sublist</li>
+                    <li>for really good measure</li>
+                    </ul>
+                </ul>
+
+                <h3><code>stuff</code></h3>
+
+                <p>Now a tiny paragraph.</p>
+
+                <pre><code>and a code block!</code></pre>
+
+                <pre><code>and another code block!</code></pre>
+                """).strip())
+
+    def test_not_html_headers(self):
+        test_doc = dedent("""\
+                =========
+                Why X < Y
+                =========
+
+                a bunch of stuff
+                """)
+
+        doc = Document(test_doc)
+        self.assertEqual( doc.to_html(), dedent("""\
+                <h1>Why X &lt; Y</h1>
+
+                <p>a bunch of stuff</p>
+                """).strip())
+
+
+
 def shape(document, text=False):
     result = []
     if isinstance(document, Document):

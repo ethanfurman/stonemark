@@ -369,7 +369,7 @@ class Node(ABC):
 
 class Heading(Node):
     type = HEADING
-    allowed_text = PLAIN
+    allowed_text = ALL_TEXT
     level = None
 
     def __init__(self, level=None, **kwds):
@@ -404,6 +404,7 @@ class Heading(Node):
                 self.level = 1
             else:
                 self.level = 2 if ch == '=' else 3
+        self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
         return super(Heading, self).finalize()
 
     @classmethod
@@ -416,7 +417,12 @@ class Heading(Node):
     def to_html(self):
         start = '<h%d>' % self.level
         end = '</h%d>' % self.level
-        return '%s%s%s' % (start, escape('\n'.join(self.items)), end)
+        result = []
+        last_style = None
+        for txt in self.items:
+            last_style = txt.style
+            result.append(txt.to_html())
+        return '%s%s%s' % (start, '\n'.join(result), end)
 
 
 class Paragraph(Node):
