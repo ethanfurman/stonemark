@@ -403,7 +403,7 @@ class Heading(Node):
         if self.level == 'first':
             self.level = first
         elif not self.level:
-            if self.sequence == 0 and ch == '=':
+            if self.parent.first_header_is_title and self.sequence == 0:
                 self.level = first
             else:
                 self.level = second if ch == '=' else third
@@ -1359,8 +1359,9 @@ def format(texts, allowed_styles, parent):
 
 class Document(object):
 
-    def __init__(self, text, header_sizes=(1, 2, 3)):
+    def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3)):
         self.links = {}
+        self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
         blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph

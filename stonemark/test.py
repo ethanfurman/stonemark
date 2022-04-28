@@ -212,7 +212,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h1>Document Title</h1>
+                <h2>Document Title</h2>
 
                 <p>In this paragraph we see that we have multiple lines of a single
                 sentence.</p>
@@ -234,6 +234,98 @@ class TestStonemark(TestCase):
                 """).strip())
 
     def test_simple_doc_4(self):
+        test_doc = dedent("""\
+                Document Title
+                ==============
+
+                In this paragraph we see that we have multiple lines of a single
+                sentence.
+
+                - plus a two-line
+                - list for good measure
+                  + and a sublist
+                  + for really good measure
+
+                Now a tiny paragraph I mean header
+                ----------------------------------
+
+                    and a code block!
+
+                ```
+                and another code block!
+                ```
+                """)
+        doc = Document(test_doc, first_header_is_title=True)
+        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <h1>Document Title</h1>
+
+                <p>In this paragraph we see that we have multiple lines of a single
+                sentence.</p>
+
+                <ul>
+                <li>plus a two-line</li>
+                <li>list for good measure</li>
+                    <ul>
+                    <li>and a sublist</li>
+                    <li>for really good measure</li>
+                    </ul>
+                </ul>
+
+                <h3>Now a tiny paragraph I mean header</h3>
+
+                <pre><code>and a code block!</code></pre>
+
+                <pre><code>and another code block!</code></pre>
+                """).strip())
+
+    def test_simple_doc_5(self):
+        test_doc = dedent("""\
+                Document Title
+                --------------
+
+                In this paragraph we see that we have multiple lines of a single
+                sentence.
+
+                - plus a two-line
+                - list for good measure
+                  + and a sublist
+                  + for really good measure
+
+                Now a tiny paragraph I mean header
+                ----------------------------------
+
+                    and a code block!
+
+                ```
+                and another code block!
+                ```
+                """)
+        doc = Document(test_doc, first_header_is_title=True)
+        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <h1>Document Title</h1>
+
+                <p>In this paragraph we see that we have multiple lines of a single
+                sentence.</p>
+
+                <ul>
+                <li>plus a two-line</li>
+                <li>list for good measure</li>
+                    <ul>
+                    <li>and a sublist</li>
+                    <li>for really good measure</li>
+                    </ul>
+                </ul>
+
+                <h3>Now a tiny paragraph I mean header</h3>
+
+                <pre><code>and a code block!</code></pre>
+
+                <pre><code>and another code block!</code></pre>
+                """).strip())
+
+    def test_simple_doc_6(self):
         test_doc = dedent("""\
                 Document Title
                 --------------
@@ -549,7 +641,7 @@ class TestStonemark(TestCase):
                 [Next](oe-install-step-2)
                 """)
         expected = dedent("""\
-                <h1>Step 1: Build your server</h1>
+                <h2>Step 1: Build your server</h2>
 
                 <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
                 following commands after the server is operational <sup><a href="#footnote-1">[1]</a></sup>:</p>
@@ -859,8 +951,6 @@ class TestStonemark(TestCase):
 
                 <p>more blah</p>
                 """).strip())
-
-
 
 
 def shape(document, text=False):
