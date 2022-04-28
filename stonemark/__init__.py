@@ -94,7 +94,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 4
+version = 0, 1, 5, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -390,20 +390,23 @@ class Heading(Node):
 
 
     def finalize(self):
+        first, second, third = self.parent.header_sizes
         line = self.items[-1].strip()
         chars = set(line)
         ch = chars.pop()
         # chars should now be empty
         if chars or len(line) < 3 or ch not in '=-':
             raise BadFormat('Heading must consist of = or - and be at least three characters long')
-        if self.level == 1 and ch != '=':
-            raise BadFormat('Level 1 Headings must end with at least three = characters')
+        if self.level == first and ch != '=':
+            raise BadFormat('Top level Headings must end with at least three = characters')
         self.items.pop()
-        if not self.level:
+        if self.level == 'first':
+            self.level = first
+        elif not self.level:
             if self.sequence == 0 and ch == '=':
-                self.level = 1
+                self.level = first
             else:
-                self.level = 2 if ch == '=' else 3
+                self.level = second if ch == '=' else third
         self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
         return super(Heading, self).finalize()
 
@@ -411,7 +414,7 @@ class Heading(Node):
     def is_type(cls, line):
         chars = set(line.strip())
         if len(chars) == 1 and len(line) >= 3 and chars.pop() == '=':
-            return True, 0, {'level': 1}
+            return True, 0, {'level': 'first'}
         return NO_MATCH
 
     def to_html(self):
@@ -1356,8 +1359,9 @@ def format(texts, allowed_styles, parent):
 
 class Document(object):
 
-    def __init__(self, text):
+    def __init__(self, text, header_sizes=(1, 2, 3)):
         self.links = {}
+        self.header_sizes = header_sizes
         #
         blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph
         stream = PPLCStream(text)

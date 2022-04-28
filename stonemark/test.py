@@ -820,11 +820,46 @@ class TestStonemark(TestCase):
                 """)
 
         doc = Document(test_doc)
-        self.assertEqual( doc.to_html(), dedent("""\
+        self.assertEqual(doc.to_html(), dedent("""\
                 <h1>Why X &lt; Y</h1>
 
                 <p>a bunch of stuff</p>
                 """).strip())
+
+    def test_header_sizes(self):
+        test_doc = dedent("""\
+                =========
+                Why X < Y
+                =========
+
+                a bunch of stuff
+
+                Summary
+                =======
+
+                blah blah
+
+                Notes
+                -----
+
+                more blah
+                """)
+
+        doc = Document(test_doc, header_sizes=(2,4,5))
+        self.assertEqual(doc.to_html(), dedent("""\
+                <h2>Why X &lt; Y</h2>
+
+                <p>a bunch of stuff</p>
+
+                <h4>Summary</h4>
+
+                <p>blah blah</p>
+
+                <h5>Notes</h5>
+
+                <p>more blah</p>
+                """).strip())
+
 
 
 
