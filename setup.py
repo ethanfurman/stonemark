@@ -3,8 +3,8 @@ from distutils.core import setup
 import sys
 
 long_desc = '''\
-stonemark -- a markup language similar to MarkDown
-==================================================
+stonemark -- a strict markup language similar to MarkDown
+=========================================================
 
 A much less forgiving markdown implementation, which is to say: if I can't tell
 what the document layout is supposed to be in text format, I don't want the
