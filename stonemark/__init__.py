@@ -6,34 +6,34 @@ currently supported syntax:
     Element                 StoneMark Syntax
 
                             ==========
-    Heading	                H1 Heading    H2 Heading   H3 Heading
+    Heading                 H1 Heading    H2 Heading   H3 Heading
                             ==========    ==========   ----------
 
     Bold                    **bold text**
 
-    Italic	                *italicized text*
+    Italic                  *italicized text*
 
     Bold & Italic           ***bold, italicized text***
 
-    Ordered List	        1. First item
+    Ordered List            1. First item
                             2. Second item
                             3. Third item
 
-    Unordered	List        - First item
+    Unordered List          - First item
                             - Second item
                             - Third item
 
-    Code	                `code`
+    Code                    `code`
 
     Horizontal Rule         --- or ***
 
-    Link	     (in-line)  [title](https://www.example.com)
+    Link         (in-line)  [title](https://www.example.com)
 
                 (separate)  [title]  or [title][id]
                             ...
                             [title | id]: <https://www.example.com>
 
-    Image	                ![alt text](image.jpg)
+    Image                   ![alt text](image.jpg)
 
 
     Fenced Code Block       ``` or ~~~
@@ -44,25 +44,25 @@ currently supported syntax:
                             }
                             ``` or ~~~
 
-    Footnote	            Here's a sentence with a footnote. [^1]
+    Footnote                Here's a sentence with a footnote. [^1]
     
                             [^1]: This is the footnote.
 
-    Strikethrough	        ~~The world is flat.~~
+    Strikethrough           ~~The world is flat.~~
 
     Underline               __Pay attention.__
 
-    Highlight	            I need to highlight these ==very important words==.
+    Highlight               I need to highlight these ==very important words==.
 
-    Subscript	            H~2~O
-    Superscript	            X^2^
+    Subscript               H~2~O
+    Superscript             X^2^
 """
 
 from __future__ import print_function
 
 # syntax still to do
 # 
-# Blockquote	        > blockquote
+# Blockquote            > blockquote
 #
 #
 # Table                 | Syntax | Description |
@@ -70,17 +70,18 @@ from __future__ import print_function
 #                       | Header | Title |
 #                       | Paragraph | Text |
 #
-# Heading ID	        ### My Great Heading {#custom-id}
+# Heading ID            ### My Great Heading {#custom-id}
 #
-# Definition List	    term
+# Definition List       term
 #                       : definition
 #
-# Task List	            - [x] Write the press release
+# Task List             - [x] Write the press release
 #                       - [ ] Update the website
 #                       - [ ] Contact the media
 #
 # Emoji                 That is so funny! :joy:
 
+# imports & globals
 from abc import ABCMeta, abstractmethod
 from aenum import Enum, Flag, IntFlag, auto, export
 from scription import *
@@ -94,12 +95,14 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 5
+version = 0, 1, 6, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
 PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
 TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
+
+# classes
 
 class NodeType(ABCMeta):
     def __repr__(self):
@@ -245,7 +248,7 @@ class Node(ABC):
             raise TypeError('parent cannot be None')
         self.parent = parent
         self.links = parent.links
-        self.current_indent = indent
+        self.indent = indent
         self.stream = stream
         self.items = []
         self.final = False
@@ -283,7 +286,7 @@ class Node(ABC):
                     stream.skip_line()
                     continue
             else:
-                ws, line = line[:self.current_indent], line[self.current_indent:]
+                ws, line = line[:self.indent], line[self.indent:]
                 if ws.strip():
                     # no longer in this node
                     status = END
@@ -316,7 +319,7 @@ class Node(ABC):
                 for child in self.allowed_blocks:
                     match, offset, kwds = child.is_type(line)
                     if match:
-                        new_indent = self.current_indent + offset
+                        new_indent = self.indent + offset
                         child = child(stream=stream, indent=new_indent, parent=self, **kwds)
                         items.append(child)
                         child.parse()
@@ -858,7 +861,7 @@ class IDLink(Node):
 
     def check(self, line):
         if not self.items:
-            self.current_indent += len(self.marker) + 4
+            self.indent += len(self.marker) + 4
             self.items.append(self.text)
             self.text = None
             return SAME
