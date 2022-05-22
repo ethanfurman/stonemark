@@ -23,6 +23,9 @@ currently supported syntax:
                             - Second item
                             - Third item
 
+    Blockquote              > three-score and seven years ago
+                            > our forefathers ...
+
     Code                    `code`
 
     Horizontal Rule         --- or ***
@@ -62,9 +65,6 @@ from __future__ import print_function
 
 # syntax still to do
 # 
-# Blockquote            > blockquote
-#
-#
 # Table                 | Syntax | Description |
 #                       | ----------- | ----------- |
 #                       | Header | Title |
@@ -296,7 +296,7 @@ class Node(ABC):
                 else:
                     status = self.check(line)
             if status is SAME and self.children and self.terminate_after_children:
-                raise BadFormat('ambiguous format at line %d:\n%r' % (stream.line_no, line))
+                raise AmbiguousFormat('ambiguous format at line %d:\n%r' % (stream.line_no, line))
             if status in (CONCLUDE, END):
                 self.reset = False
                 self.end_line = self.end_line or stream.line_no
@@ -424,9 +424,7 @@ class Heading(Node):
         start = '<h%d>' % self.level
         end = '</h%d>' % self.level
         result = []
-        last_style = None
         for txt in self.items:
-            last_style = txt.style
             result.append(txt.to_html())
         return '%s%s%s' % (start, '\n'.join(result), end)
 
@@ -472,9 +470,7 @@ class Paragraph(Node):
         start = '<p>'
         end = '</p>'
         result = []
-        last_style = None
         for txt in self.items:
-            last_style = txt.style
             result.append(txt.to_html())
         return '%s%s%s' % (start, ''.join(result), end)
 
@@ -581,9 +577,7 @@ class Image(Node):
 
     def to_html(self):
         alt_text = []
-        last_style = None
         for txt in self.items:
-            last_style = txt.style
             alt_text.append(txt.to_html())
         alt_text = ''.join(alt_text)
         return '<img src="%s" alt="%s">' % (self.url, alt_text)
@@ -828,9 +822,7 @@ class Text(Node):
             body = escape(self.text)
         else:
             result = []
-            last_style = None
             for txt in self.items:
-                last_style = txt.style
                 try:
                     result.append(txt.to_html())
                 except AttributeError:
@@ -950,14 +942,75 @@ class Link(Text):
 
 class BlockQuote(Node):
     type = QUOTE
-    allowed_blocks = ()
+    # allowed_blocks = CodeBlock, Image, List, ListItem, Paragraph
     allowed_text = ALL_TEXT
+    terminate_after_children = False
 
-    def render(self):
-        output.write('<blockquote>\n')
-        super(BlockQuote, self).render()
-        output.write('</blockquote>\n')
+    def __init__(self, **kwds):
+        super(BlockQuote,self).__init__(**kwds)
+        self.level = 1
+        if isinstance(self.parent, self.__class__):
+            self.level += self.parent.level
 
+    def check(self, line):
+        if match(BQ, line):
+            level = len(match.groups()[0])
+            line = line[level:]
+            if line and line[0] != ' ':
+                raise BadFormat('a space is needed in %r' % line)
+            line = line[1:]
+            if level == self.level:
+                self.items.append(line)
+                return SAME
+            elif level > self.level:
+                return CHILD
+            else: # level < self.level
+                return END
+        return END
+
+
+    @classmethod
+    def is_type(cls, line):
+        if match(BQ, line):
+            return True, 0, {}
+        return NO_MATCH
+
+    def finalize(self):
+        # handle sub-elements
+        final_items = []
+        doc = []
+        for item in self.items:
+            if isinstance(item, unicode):
+                # simple text, append it
+                doc.append(item)
+            else:
+                # an embedded node, process any text lines
+                if doc:
+                    doc = Document('\n'.join(doc))
+                    final_items.extend(doc.nodes)
+                doc = []
+                final_items.append(item)
+        if doc:
+            doc = Document('\n'.join(doc))
+            final_items.extend(doc.nodes)
+        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        return super(BlockQuote, self).finalize()
+
+    def to_html(self):
+        lead_space = ' ' * 12 * (self.level-1)
+        mid_space = '\n' + ' ' * 12
+        start = '<blockquote>'
+        end = '\n</blockquote>'
+        result = []
+        result.append(start)
+        for item in self.items:
+            if isinstance(item, Node):
+                result.append(mid_space + mid_space.join(item.to_html().split('\n')))
+            else:
+                result.append(mid_space + item)
+        result.append(end)
+        return ''.join(result)
+BlockQuote.allowed_blocks = (BlockQuote, )
 
 class ID(Node):
     type = ID
@@ -1107,18 +1160,11 @@ def format(texts, allowed_styles, parent):
                     close_count += 1
                     if open_count == close_count:
                         return i
-                # nope, check for valid open tag
-                # elif possible == open and ws(i, forward=False):
-                #     open_count += 1
-                #     i += match_len - 1
             # check for valid open tag
             if possible == open:
                 if not ws_needed or ws(i, forward=False):
                     open_count += 1
                     i += match_len - 1
-            # if counts are equal, we have our match
-            # if open_count == close_count:
-            #     return i
             i += 1
         else:
             return -1
@@ -1220,6 +1266,11 @@ def format(texts, allowed_styles, parent):
                 # what kind of link do we have?
                 if chars[start+1].char == '^':
                     # a foot note
+                    # remove previous spaces
+                    while chars[start-1].char == ' ':
+                        chars.pop(start-1)
+                        start -= 1
+                        end -=1
                     marker = ''.join([c.char for c in chars[start+1:end]])
                     fn = Link(marker=marker, parent=parent)
                     chars[start:end+1] = [fn]
@@ -1367,7 +1418,7 @@ class Document(object):
         self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
-        blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph
+        blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph, BlockQuote
         stream = PPLCStream(text)
         nodes = []
         count = 0
@@ -1425,7 +1476,7 @@ match = Var(re.match)
 UL = r'(  )?(-|\+|\*) (.*)'
 OL = r'(  )?(\d+)(\.|\)) (.*)'
 CL = r'( *)?(.*)'
-BQ = r'> (.*)'
+BQ = r'(>+)'
 CB = r'    (.*)'
 FCB = r'(```|~~~) ?(.*)'
 HR = r'(---+|\*\*\*+)'

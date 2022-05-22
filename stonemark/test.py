@@ -420,7 +420,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph, Rule, IDLink])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about many things. <sup><a href="#footnote-1">[1]</a></sup> The question is:
+                <p>This is a paragraph talking about many things.<sup><a href="#footnote-1">[1]</a></sup> The question is:
                 how are those many things related?</p>
 
                 <hr>
@@ -644,12 +644,12 @@ class TestStonemark(TestCase):
                 <h2>Step 1: Build your server</h2>
 
                 <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
-                following commands after the server is operational <sup><a href="#footnote-1">[1]</a></sup>:</p>
+                following commands after the server is operational<sup><a href="#footnote-1">[1]</a></sup>:</p>
 
                 <pre><code>apt-get install openssh-server postgresql-9.1
                 # optional: denyhosts</code></pre>
 
-                <p>Now make sure your server has all the latest versions &amp; patches by doing an update <sup><a href="#footnote-2">[2]</a></sup>:</p>
+                <p>Now make sure your server has all the latest versions &amp; patches by doing an update<sup><a href="#footnote-2">[2]</a></sup>:</p>
 
                 <pre><code>apt-get update
                 apt-get dist-upgrade</code></pre>
@@ -761,7 +761,7 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <p>Here is <code>some code</code><sup><a href="#footnote-hah">[hah]</a></sup>.</p>
 
-                <p>And then another <sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>And then another<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
                 """).strip()
@@ -951,6 +951,107 @@ class TestStonemark(TestCase):
 
                 <p>more blah</p>
                 """).strip())
+
+
+    def test_quotation_1(self):
+        test_doc = dedent("""\
+                > single level quote
+
+                > level 1 and
+                >> level 2
+                > level 1 again
+                """)
+        doc = Document(test_doc, header_sizes=(2,4,5))
+        self.assertEqual(doc.to_html(), dedent("""\
+                <blockquote>
+                            <p>single level quote</p>
+                </blockquote>
+
+                <blockquote>
+                            <p>level 1 and</p>
+                            <blockquote>
+                                        <p>level 2</p>
+                            </blockquote>
+                            <p>level 1 again</p>
+                </blockquote>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_quotation_2(self):
+        test_doc = dedent("""\
+                >>> third level quote
+                >>> still third
+                >> second
+                > first
+
+                > level 1 and
+                >> level 2
+                > level 1 again
+                """)
+        doc = Document(test_doc, header_sizes=(2,4,5))
+        self.assertEqual(doc.to_html(), dedent("""\
+                <blockquote>
+                            <blockquote>
+                                        <blockquote>
+                                                    <p>third level quote
+                                                    still third</p>
+                                        </blockquote>
+                                        <p>second</p>
+                            </blockquote>
+                            <p>first</p>
+                </blockquote>
+
+                <blockquote>
+                            <p>level 1 and</p>
+                            <blockquote>
+                                        <p>level 2</p>
+                            </blockquote>
+                            <p>level 1 again</p>
+                </blockquote>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_quotation_3(self):
+        test_doc = dedent("""\
+                > A Title
+                > =======
+                >
+                > Then some text, followed by
+                >
+                > - list item 1
+                > - list item 2
+                >
+                > ``` python
+                > and some code
+                > ```
+                >> another quote block
+                > and done
+
+                so there.
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <blockquote>
+                            <h2>A Title</h2>
+                            <p>Then some text, followed by</p>
+                            <ul>
+                            <li>list item 1</li>
+                            <li>list item 2</li>
+                            </ul>
+                            <pre><code>and some code</code></pre>
+                            <blockquote>
+                                        <p>another quote block</p>
+                            </blockquote>
+                            <p>and done</p>
+                </blockquote>
+
+                <p>so there.</p>
+                """).strip(),
+                doc.to_html(),
+                )
+
 
 
 def shape(document, text=False):
