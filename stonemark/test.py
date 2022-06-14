@@ -1052,6 +1052,102 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_code_block_in_list(self):
+        test_doc = dedent("""\
+                Other documents can be linked to from here, or just created.
+
+                Quick rundown of features:
+
+                - `*italic*` --> *italic*
+                - `**bold**` --> **bold**
+                - `***bold italic***` --> ***bold italic***
+                - `__underline__` --> __underline__
+                - `~~strike-through~~` --> ~~strike-through~~
+                - `==highlight==` --> ==highlight==
+
+                Headings
+                ========
+
+                - level 1 heading
+                  ```
+                  =========
+                  Heading 1
+                  =========
+                  ```
+
+                - level 2 heading
+                  ```
+                  Heading 2
+                  =========
+                  ```
+
+                - level 3 heading
+                  ```
+                  Heading 3
+                  ---------
+                  ```
+                    """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>Other documents can be linked to from here, or just created.</p>
+
+                <p>Quick rundown of features:</p>
+
+                <ul>
+                <li><code>*italic*</code> --&gt; <i>italic</i></li>
+                <li><code>**bold**</code> --&gt; <b>bold</b></li>
+                <li><code>***bold italic***</code> --&gt; <b><i>bold italic</i></b></li>
+                <li><code>__underline__</code> --&gt; <u>underline</u></li>
+                <li><code>~~strike-through~~</code> --&gt; <del>strike-through</del></li>
+                <li><code>==highlight==</code> --&gt; <mark>highlight</mark></li>
+                </ul>
+
+                <h2>Headings</h2>
+
+                <ul>
+                <li>level 1 heading<pre><code>=========
+                Heading 1
+                =========</code></pre></li>
+                <li>level 2 heading<pre><code>Heading 2
+                =========</code></pre></li>
+                <li>level 3 heading<pre><code>Heading 3
+                ---------</code></pre></li>
+                </ul>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_heading1_in_code_block(self):
+        test_doc = dedent("""\
+                Headings
+                ========
+
+                    =========
+                    Heading 1
+                    =========
+
+                    Heading 2
+                    =========
+
+                    Heading 3
+                    ---------
+                    """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <h2>Headings</h2>
+
+                <pre><code>=========
+                Heading 1
+                =========</code></pre>
+
+                <pre><code>Heading 2
+                =========</code></pre>
+
+                <pre><code>Heading 3
+                ---------</code></pre>
+                """).strip(),
+                doc.to_html(),
+                )
 
 
 def shape(document, text=False):

@@ -80,7 +80,7 @@ make = []
 
 data = dict(
        name='stonemark',
-       version='0.1.6',
+       version='0.1.7a3',
        license='BSD License',
        description='a markup language similar to markdown',
        long_description=long_desc,

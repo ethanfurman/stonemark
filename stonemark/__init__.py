@@ -95,7 +95,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 6
+version = 0, 1, 7, 3
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -530,8 +530,9 @@ class CodeBlock(Node):
     @classmethod
     def is_type(cls, line):
         if match(FCB, line):
-            block_type, attrs = match().groups()
-            return True, 0, {'block_type': block_type, 'attrs': attrs}
+            indent, block_type, attrs = match().groups()
+            indent = indent and len(indent) or 0
+            return True, indent, {'block_type': block_type, 'attrs': attrs}
         if match(CB, line):
             return True, 4, {'block_type': 'indented', 'attrs': None}
         return NO_MATCH
@@ -652,7 +653,7 @@ class List(Node):
 
 class ListItem(Node):
     type = LISTITEM
-    allowed_blocks = CodeBlock, Image, List, Paragraph
+    allowed_blocks = CodeBlock, Image, List
     allowed_text = ALL_TEXT
     regex = None
     marker = None
@@ -715,6 +716,8 @@ class ListItem(Node):
         indent, text = match(CL, line).groups()
         if not indent or len(indent) != c_indent:
             return END
+        if match(FCB, text):
+            return CHILD
         self.items.append(text)
         return SAME
 
@@ -1418,7 +1421,7 @@ class Document(object):
         self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
-        blocks = Heading, List, CodeBlock, Rule, IDLink, Image, Paragraph, BlockQuote
+        blocks = CodeBlock, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
         stream = PPLCStream(text)
         nodes = []
         count = 0
@@ -1437,7 +1440,7 @@ class Document(object):
                     count += 1
                     break
             else:
-                raise Exception('no match found at line %d\n%r' % (stream.line_no, line))
+                raise FormatError('no match found at line %d\n%r' % (stream.line_no, line))
             keep = node.parse()
             if keep:
                 nodes.append(node)
@@ -1478,7 +1481,7 @@ OL = r'(  )?(\d+)(\.|\)) (.*)'
 CL = r'( *)?(.*)'
 BQ = r'(>+)'
 CB = r'    (.*)'
-FCB = r'(```|~~~) ?(.*)'
+FCB = r'( *)(```|~~~) ?(.*)'
 HR = r'(---+|\*\*\*+)'
 HD = r'(===+|---+)'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
