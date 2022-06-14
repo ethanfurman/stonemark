@@ -1171,6 +1171,26 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_proper_spacing(self):
+        test_doc = dedent("""\
+                A paragraph
+                - with a list
+                - immediately after
+                  which has a multi-
+                  line entry
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>A paragraph</p>
+
+                <ul>
+                <li>with a list</li>
+                <li>immediately after which has a multiline entry</li>
+                </ul>
+                """).strip(),
+                doc.to_html(),
+                )
+
 
 
 def shape(document, text=False):

@@ -435,7 +435,6 @@ class Paragraph(Node):
 
     def check(self, line=0):
         stream = self.stream
-        self.items.append(line)
         if match(HD, line):
             # blank following line?
             blank_line = stream.peek_line()
@@ -445,7 +444,11 @@ class Paragraph(Node):
                         'ambiguous line %d: add a subsequent blank line for a header, or have the first '
                         'non-blank character be a backslash (\\)' % (stream.line_no+1, )
                         )
+            self.items.append(line)
             return CONCLUDE
+        if match(UL, line) or match(OL, line):
+            return END
+        self.items.append(line)
         return SAME
 
     @classmethod
@@ -718,6 +721,10 @@ class ListItem(Node):
             return END
         if match(FCB, text):
             return CHILD
+        if self.items[-1].endswith('-'):
+            self.items[-1] = self.items[-1][:-1]
+        else:
+            text = ' ' + text
         self.items.append(text)
         return SAME
 
