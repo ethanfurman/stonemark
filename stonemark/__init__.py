@@ -95,7 +95,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 8
+version = 0, 1, 9, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -634,11 +634,12 @@ class List(Node):
         return NO_MATCH
 
     def premature_end(self, line):
-        if isinstance(self.parent, ListItem):
-            # if ending non-blank line is a part of an outer list, we're okay
-            pass
-        else:
-            super(List, self).premature_end(line)
+        pass
+        # if isinstance(self.parent, ListItem):
+        #     # if ending non-blank line is a part of an outer list, we're okay
+        #     pass
+        # else:
+        #     super(List, self).premature_end(line)
 
     def to_html(self, indent=0):
         spacing = ' ' * indent
@@ -662,6 +663,8 @@ class ListItem(Node):
     marker = None
     number = None
     blank_line_required = False
+    blank_line = RESET
+    terminate_after_children = False
 
     def __init__(self, marker=None, list_type=None, text=None, **kwds):
         super(ListItem, self).__init__(**kwds)
@@ -721,10 +724,11 @@ class ListItem(Node):
             return END
         if match(FCB, text):
             return CHILD
-        if self.items[-1].endswith('-'):
-            self.items[-1] = self.items[-1][:-1]
-        else:
-            text = ' ' + text
+        if isinstance(self.items[-1], str):
+            if self.items[-1].endswith('-'):
+                self.items[-1] = self.items[-1][:-1]
+            else:
+                text = ' ' + text
         self.items.append(text)
         return SAME
 
@@ -741,7 +745,29 @@ class ListItem(Node):
         return NO_MATCH
 
     def finalize(self):
-        self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
+        # self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
+        # remove paragraph status from item[0] if present
+        # handle sub-elements
+        final_items = []
+        doc = []
+        for item in self.items:
+            if isinstance(item, unicode):
+                # simple text, append it
+                doc.append(item)
+            else:
+                # an embedded node, process any text lines
+                if doc:
+                    doc = Document('\n'.join(doc))
+                    final_items.extend(doc.nodes)
+                doc = []
+                final_items.append(item)
+        if doc:
+            doc = Document('\n'.join(doc))
+            final_items.extend(doc.nodes)
+        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        print('self.items is', repr(self.items))
+        if isinstance(self.items[0], Paragraph):
+            self.items[0:1] = self.items[0].items
         return super(ListItem, self).finalize()
 
     def to_html(self, indent=0):

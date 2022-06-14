@@ -1086,7 +1086,7 @@ class TestStonemark(TestCase):
                   Heading 3
                   ---------
                   ```
-                    """)
+                  """)
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
                 <p>Other documents can be linked to from here, or just created.</p>
@@ -1185,7 +1185,9 @@ class TestStonemark(TestCase):
 
                 <ul>
                 <li>with a list</li>
-                <li>immediately after which has a multiline entry</li>
+                <li>immediately after
+                 which has a multi
+                line entry</li>
                 </ul>
                 """).strip(),
                 doc.to_html(),
@@ -1209,6 +1211,73 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
                 <pre><code>a test of \\` escaping backticks</code></pre>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_a_bunch(self):
+        test_doc = dedent("""\
+                1. Start Nutritional Server
+
+                   ```
+                   # ssh root@192.168.11.68
+                   # ps -efw|grep -i vbox
+                   ...
+                   root      4262  4247 12 Dec07 ?        14:33:22 /usr/lib/virtualbox/VBoxHeadless --comment Nutritional Server - Master --startvm ...
+                   ...
+                   ```
+
+                   + if not running, 
+                     ```
+                     # fnx_start_nutritional_server
+                     ```
+                     * (This starts virtual machine 10.39, without a connection to your display)
+
+                     * (For troubleshooting, remove --type headless and it will come up on your display)
+
+                2. Enable shared drive access to L:
+
+                   + VNC to 10.39 and verify L: is browsable (enter password probably) and then answer N
+
+                   + the L: drive should be connected to 11.254/Labels using the standard password.
+
+                3. Print Nutritional Labels
+
+                   + To print nutritional labels, ssh to 11.16 and execute:
+                     ```
+                     /usr/local/lib/python2.7/dist-packages/fenx/prepNutriPanelFromSSs.py
+                     ```
+                4. Override selected label percentage values
+
+                   + When printing nutritional panels the option now exists to override the calculated percentages which,
+                     as we've detailed, occasionally result in wrong values due to the specific implementation used.  To
+                     compensate, I've added the ability to override specific values when requesting the label to print.
+                     The application prompt, which previously read:
+                     ```
+                     LOF to quit or enter as ITEMNO<comma>QTY<space>ITEMNO<space><etc>:
+                     ``
+                     now reads:
+                     ```
+                     LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:
+                     ```
+
+                   This allows you to respond with a command like:
+                   `006121:FAT_PERC=22:VITD_PER=13,2`
+
+                   This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.
+
+                   You can still use the space to separate multiple items.  For example,
+
+                   `007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121`
+
+                   The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.
+
+                   This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.
+
+                   Note: it is possible to set an override percent value that doesn't conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
                 """).strip(),
                 doc.to_html(),
                 )
