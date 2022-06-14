@@ -1151,7 +1151,8 @@ def format(texts, allowed_styles, parent):
         i = start
         while i < end:
             if chars[i].char == '\\':
-                i += 2
+                del chars[i]
+                i += 1
                 continue
             possible = ''.join(c.char for c in chars[i:i+match_len])
             if possible == close:

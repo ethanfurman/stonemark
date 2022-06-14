@@ -1191,6 +1191,28 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_backtick_in_code_block(self):
+        test_doc = dedent("""\
+                `a test of \\` escaping backticks`
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p><code>a test of ` escaping backticks</code></p>
+                """).strip(),
+                doc.to_html(),
+                )
+        test_doc = dedent("""\
+                ```
+                a test of \\` escaping backticks
+                ```
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <pre><code>a test of \\` escaping backticks</code></pre>
+                """).strip(),
+                doc.to_html(),
+                )
+
 
 
 def shape(document, text=False):
