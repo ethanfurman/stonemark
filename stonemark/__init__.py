@@ -95,7 +95,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 1, 7
+version = 0, 1, 8, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -1220,7 +1220,8 @@ def format(texts, allowed_styles, parent):
             start = pos
             ch = chars[pos]
             if ch.char == '\\':
-                pos += 2
+                del chars[pos]
+                pos += 1
                 continue
             if ch.char == "`":
                 # code

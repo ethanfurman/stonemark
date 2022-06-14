@@ -1149,6 +1149,29 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_backslash_disappears(self):
+        test_doc = dedent("""\
+                \\*italic\\* --> *italic*
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>*italic* --&gt; <i>italic</i></p>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_backslash_remains(self):
+        test_doc = dedent("""\
+                \\\\*italic\\\\* --> \\\\*italic\\\\*
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>\\*italic\\* --&gt; \\*italic\\*</p>
+                """).strip(),
+                doc.to_html(),
+                )
+
+
 
 def shape(document, text=False):
     result = []
