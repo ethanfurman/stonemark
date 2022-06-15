@@ -390,7 +390,7 @@ class TestStonemark(TestCase):
                 ```
                 """)
 
-        with self.assertRaisesRegex(BadFormat, 'indented code blocks cannot follow lists .line 12.'):
+        with self.assertRaisesRegex(FormatError, 'no match found'):
             doc = Document(test_doc)
 
     def test_format_nesting_1(self):
@@ -1186,9 +1186,23 @@ class TestStonemark(TestCase):
                 <ul>
                 <li>with a list</li>
                 <li>immediately after
-                 which has a multi
-                line entry</li>
+                which has a multiline entry</li>
                 </ul>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_two_paragraphs(self):
+        test_doc = dedent("""\
+                a test of multiple
+
+                paragraphs
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>a test of multiple</p>
+
+                <p>paragraphs</p>
                 """).strip(),
                 doc.to_html(),
                 )
@@ -1255,7 +1269,7 @@ class TestStonemark(TestCase):
                      The application prompt, which previously read:
                      ```
                      LOF to quit or enter as ITEMNO<comma>QTY<space>ITEMNO<space><etc>:
-                     ``
+                     ```
                      now reads:
                      ```
                      LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:
@@ -1278,6 +1292,153 @@ class TestStonemark(TestCase):
                   """)
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
+                    <ol>
+                    <li>Start Nutritional Server<pre><code># ssh root@192.168.11.68
+                    # ps -efw|grep -i vbox
+                    ...
+                    root      4262  4247 12 Dec07 ?        14:33:22 /usr/lib/virtualbox/VBoxHeadless --comment Nutritional Server - Master --startvm ...
+                    ...</code></pre></li>
+                        <ul>
+                        <li>if not running,<pre><code># fnx_start_nutritional_server</code></pre></li>
+                        <ul>
+                        <li>(This starts virtual machine 10.39, without a connection to your display)</li>
+                        <li>(For troubleshooting, remove --type headless and it will come up on your display)</li>
+                        </ul>
+                        </ul>
+                    <li>Enable shared drive access to L:</li>
+                        <ul>
+                        <li>VNC to 10.39 and verify L: is browsable (enter password probably) and then answer N</li>
+                        <li>the L: drive should be connected to 11.254/Labels using the standard password.</li>
+                        </ul>
+                    <li>Print Nutritional Labels</li>
+                        <ul>
+                        <li>To print nutritional labels, ssh to 11.16 and execute:<pre><code>/usr/local/lib/python2.7/dist-packages/fenx/prepNutriPanelFromSSs.py</code></pre></li>
+                        </ul>
+                    <li>Override selected label percentage values<p>This allows you to respond with a command like:
+                    <code>006121:FAT_PERC=22:VITD_PER=13,2</code></p><p>This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.</p><p>You can still use the space to separate multiple items.  For example,</p><p><code>007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121</code></p><p>The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.</p><p>This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.</p><p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p></li>
+                        <ul>
+                        <li>When printing nutritional panels the option now exists to override the calculated percentages which,
+                    as we&apos;ve detailed, occasionally result in wrong values due to the specific implementation used.  To
+                    compensate, I&apos;ve added the ability to override specific values when requesting the label to print.
+                    The application prompt, which previously read:<pre><code>LOF to quit or enter as ITEMNO&lt;comma&gt;QTY&lt;space&gt;ITEMNO&lt;space&gt;&lt;etc&gt;:</code></pre><p>now reads:</p><pre><code>LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:</code></pre></li>
+                        </ul>
+                    </ol>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_a_bunch_more(self):
+        test_doc = dedent("""\
+                1: Start Nutritional Server
+                ---------------------------
+                ```
+                # ssh root@192.168.11.68
+                # ps -efw|grep -i vbox
+                ...
+                root      4262  4247 12 Dec07 ?        14:33:22 /usr/lib/virtualbox/VBoxHeadless --comment Nutritional Server - Master --startvm ...
+                ...
+                ```
+                if not running, 
+                ```
+                # fnx_start_nutritional_server
+                ```
+                (This starts virtual machine 10.39, without a connection to your display)
+
+                (For troubleshooting, remove --type headless and it will come up on your display)
+
+                2: Enable shared drive access to L:
+                -----------------------------------
+
+                VNC to 10.39 and verify L: is browsable (enter password probably) and then answer N
+
+                the L: drive should be connected to 11.254/Labels using the standard password.
+
+
+                3: Print Nutritional Labels
+                ---------------------------
+
+                To print nutritional labels, ssh to 11.16 and execute:
+                ```
+                /usr/local/lib/python2.7/dist-packages/fenx/prepNutriPanelFromSSs.py
+                ```
+
+                4: Override selected label percentage values
+                --------------------------------------------
+
+                When printing nutritional panels the option now exists to override the calculated percentages which, as we've detailed, occasionally result in wrong values due to the specific implementation used.  To compensate, I've added the ability to override specific values when requesting the label to print.  The application prompt, which previously read:
+                    LOF to quit or enter as ITEMNO<comma>QTY<space>ITEMNO<space><etc>:
+                now reads:
+                    LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:
+
+                This allows you to respond with a command like:
+                    006121:FAT_PERC=22:VITD_PER=13,2
+
+                This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.
+
+                You can still use the space to separate multiple items.  For example,
+                    007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121
+
+                The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.
+
+                This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.
+
+                Note: it is possible to set an override percent value that doesn't conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <h3>1: Start Nutritional Server</h3>
+
+                <pre><code># ssh root@192.168.11.68
+                # ps -efw|grep -i vbox
+                ...
+                root      4262  4247 12 Dec07 ?        14:33:22 /usr/lib/virtualbox/VBoxHeadless --comment Nutritional Server - Master --startvm ...
+                ...</code></pre>
+
+                <p>if not running,</p>
+
+                <pre><code># fnx_start_nutritional_server</code></pre>
+
+                <p>(This starts virtual machine 10.39, without a connection to your display)</p>
+
+                <p>(For troubleshooting, remove --type headless and it will come up on your display)</p>
+
+                <h3>2: Enable shared drive access to L:</h3>
+
+                <p>VNC to 10.39 and verify L: is browsable (enter password probably) and then answer N</p>
+
+                <p>the L: drive should be connected to 11.254/Labels using the standard password.</p>
+
+                <h3>3: Print Nutritional Labels</h3>
+
+                <p>To print nutritional labels, ssh to 11.16 and execute:</p>
+
+                <pre><code>/usr/local/lib/python2.7/dist-packages/fenx/prepNutriPanelFromSSs.py</code></pre>
+
+                <h3>4: Override selected label percentage values</h3>
+
+                <p>When printing nutritional panels the option now exists to override the calculated percentages which, as we&apos;ve detailed, occasionally result in wrong values due to the specific implementation used.  To compensate, I&apos;ve added the ability to override specific values when requesting the label to print.  The application prompt, which previously read:</p>
+
+                <pre><code>LOF to quit or enter as ITEMNO&lt;comma&gt;QTY&lt;space&gt;ITEMNO&lt;space&gt;&lt;etc&gt;:</code></pre>
+
+                <p>now reads:</p>
+
+                <pre><code>LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:</code></pre>
+
+                <p>This allows you to respond with a command like:</p>
+
+                <pre><code>006121:FAT_PERC=22:VITD_PER=13,2</code></pre>
+
+                <p>This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.</p>
+
+                <p>You can still use the space to separate multiple items.  For example,</p>
+
+                <pre><code>007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121</code></pre>
+
+                <p>The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.</p>
+
+                <p>This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.</p>
+
+                <p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p>
                 """).strip(),
                 doc.to_html(),
                 )

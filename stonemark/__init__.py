@@ -268,8 +268,9 @@ class Node(ABC):
     def parse(self):
         items = self.items
         stream = self.stream
-        reset = False
+        self.reset = False
         #
+        i = 0
         while stream:
             line = stream.current_line.rstrip()
             if not line:
@@ -374,6 +375,7 @@ class Heading(Node):
     type = HEADING
     allowed_text = ALL_TEXT
     level = None
+    blank_line_required = False
 
     def __init__(self, level=None, **kwds):
         super(Heading, self).__init__(**kwds)
@@ -435,20 +437,28 @@ class Paragraph(Node):
 
     def check(self, line=0):
         stream = self.stream
+        for regex in UL, OL, BQ, CB, FCB:
+            if match(regex, line):
+                return END
         if match(HD, line):
             # blank following line?
             blank_line = stream.peek_line()
             if blank_line.strip():
-                # woops
-                raise AmbiguousFormat(
-                        'ambiguous line %d: add a subsequent blank line for a header, or have the first '
-                        'non-blank character be a backslash (\\)' % (stream.line_no+1, )
-                        )
+                for regex in UL, OL, BQ, CB, FCB:
+                    if match(regex, blank_line):
+                        break
+                else:
+                    # woops
+                    raise AmbiguousFormat(
+                            'ambiguous line %d: add a subsequent blank line for a header, or have the first '
+                            'non-blank character be a backslash (\\)' % (stream.line_no+1, )
+                            )
             self.items.append(line)
             return CONCLUDE
-        if match(UL, line) or match(OL, line):
-            return END
-        self.items.append(line)
+        if self.items and isinstance(self.items[-1], str) and self.items[-1].endswith('-'):
+            self.items[-1] = self.items[-1][:-1] + line
+        else:
+            self.items.append(line)
         return SAME
 
     @classmethod
@@ -481,6 +491,7 @@ class Paragraph(Node):
 class CodeBlock(Node):
     type = CODEBLOCK
     allowed_text = PLAIN
+    blank_line_required = False
 
     def __init__(self, block_type, attrs, **kwds):
         super(CodeBlock, self).__init__(**kwds)
@@ -592,6 +603,7 @@ class List(Node):
     allowed_blocks = ()             # ListItem added after definition
     blank_line = RESET
     terminate_after_children = False
+    blank_line_required = False
 
     def __init__(self, marker, list_type, **kwds):
         super(List, self).__init__(**kwds)
@@ -635,11 +647,6 @@ class List(Node):
 
     def premature_end(self, line):
         pass
-        # if isinstance(self.parent, ListItem):
-        #     # if ending non-blank line is a part of an outer list, we're okay
-        #     pass
-        # else:
-        #     super(List, self).premature_end(line)
 
     def to_html(self, indent=0):
         spacing = ' ' * indent
@@ -677,58 +684,18 @@ class ListItem(Node):
             self.regex = OL
 
     def check(self, line):
-        # could be:
-        # - a first line                --> if self.items is empty, SAME; else END
-        #   a continuation line         --> SAME
-        #   - a new sublist             --> END
-        #       too much indent         --> exception
-        #too little indent              --> if parent is a list, END; else excepttion
         if not self.items:
             self.items.append(self.text)
             self.text = None
             return SAME
-        #
-        # four options:
-        # - same type, no indent -> new list item
-        # - same type, indent -> new sublist of same type
-        # - other type, indent -> new sublist of other type
-        # - other type, no indent -> error
-        # and, of course
-        # - extending last list item
-        if match(UL, line):
-            indent, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            if self.regex == UL:
-                if indent:
-                    return CHILD
-                return END
-            else:
-                if indent:
-                    return CHILD
-                raise BadFormat('cannot change list type in middle of list', self.stream.line_no)
-        elif match(OL, line):
-            indent, number, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            if self.regex == OL:
-                if indent:
-                    return CHILD
-                return END
-            else:
-                if indent:
-                    return CHILD
-                raise BadFormat('cannot change list type in middle of list', self.stream.line_no)
-        #
         c_indent = len(self.marker) + 1
         indent, text = match(CL, line).groups()
-        if not indent or len(indent) != c_indent:
+        if not indent or len(indent) < c_indent:
             return END
-        if match(FCB, text):
-            return CHILD
-        if isinstance(self.items[-1], str):
-            if self.items[-1].endswith('-'):
-                self.items[-1] = self.items[-1][:-1]
-            else:
-                text = ' ' + text
+        text = line[c_indent:]  # preserve beginning whitespace of sub-items
+        if self.reset:
+            # get empty line back
+            self.items.append('')
         self.items.append(text)
         return SAME
 
@@ -750,6 +717,13 @@ class ListItem(Node):
         # handle sub-elements
         final_items = []
         doc = []
+        sub_doc = Document('\n'.join(self.items))
+        final_items.extend(sub_doc.nodes)
+        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        if self.items and isinstance(self.items[0], Paragraph):
+            self.items[0:1] = self.items[0].items
+        return super(ListItem, self).finalize()
+
         for item in self.items:
             if isinstance(item, unicode):
                 # simple text, append it
@@ -765,7 +739,6 @@ class ListItem(Node):
             doc = Document('\n'.join(doc))
             final_items.extend(doc.nodes)
         self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
-        print('self.items is', repr(self.items))
         if isinstance(self.items[0], Paragraph):
             self.items[0:1] = self.items[0].items
         return super(ListItem, self).finalize()
@@ -981,6 +954,7 @@ class BlockQuote(Node):
     # allowed_blocks = CodeBlock, Image, List, ListItem, Paragraph
     allowed_text = ALL_TEXT
     terminate_after_children = False
+    blank_line_required = False
 
     def __init__(self, **kwds):
         super(BlockQuote,self).__init__(**kwds)
@@ -1468,15 +1442,14 @@ class Document(object):
                     if nodes and nt is List:
                         if indent != 0 and isinstance(nodes[-1], CodeBlock) and nodes[-1].block_type == 'indented':
                             raise BadFormat('lists that follow indented code blocks cannot be indented (line %d)' % stream.line_no)
-                    elif nodes and nt is CodeBlock:
-                        if indent != 0 and isinstance(nodes[-1], List):
-                            raise BadFormat('indented code blocks cannot follow lists (line %d)' % stream.line_no)
                     node = nt(stream=stream, indent=indent, parent=self, sequence=count, **kwds)
                     count += 1
                     break
             else:
                 raise FormatError('no match found at line %d\n%r' % (stream.line_no, line))
             keep = node.parse()
+            if nodes and nt is CodeBlock and node.block_type == 'indented' and isinstance(nodes[-1], List):
+                raise BadFormat('indented code blocks cannot follow lists (line %d)\n%r' % (node.start_line, line))
             if keep:
                 nodes.append(node)
         self.nodes = nodes
