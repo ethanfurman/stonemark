@@ -91,16 +91,16 @@ import re
 __all__ = [
         'FormatError', 'BadFormat', 'AmbiguousFormat', 'IndentError',
         'Node', 'Heading', 'Paragraph', 'List', 'ListItem', 'CodeBlock', 'BlockQuote', 'Rule',
-        'Link', 'Image', 'IDLink', 'ID', 'Definition', 'Text',
+        'Link', 'Image', 'IDLink', 'ID', 'Definition', 'Text', 'Table',
         'Document',
         ]
 
-version = 0, 1, 9
+version = 0, 1, 10, 1
 
-HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
-END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
-PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
-TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
+    # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
+    # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
+    # PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
+    # TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
 
 # classes
 
@@ -132,6 +132,7 @@ class NodeType(Flag):
     LINK            = auto()
     ID              = auto()
     DEFINITION      = auto()
+    TABLE           = auto()
 
 @export(module)
 class NodeStatus(DocEnum):
@@ -1022,6 +1023,100 @@ class BlockQuote(Node):
         return ''.join(result)
 BlockQuote.allowed_blocks = (BlockQuote, )
 
+class Table(Node):
+    type = TABLE
+    allowed_text = ALL_TEXT
+    blank_line_required = True
+    cell_count = 0
+    header_cells = []
+    body_cells = []
+    rows = []
+    dividers = 0
+
+    def __init__(self, line, **kwds):
+        super(Table, self).__init__(**kwds)
+        self.header_cells = []
+        self.body_cells = []
+        self.rows = []
+        cells = self.split_row(line)
+        self.cell_count = len(cells)
+
+    def check(self, line):
+        cells = self.split_row(line.rstrip())
+        if len(cells) != self.cell_count:
+            raise BadFormat('line %r does not have %d cells' % (line, self.cell_count))
+        self.rows.append(cells)
+        return SAME
+
+    def finalize(self):
+        """
+        the entire table is in rows as lists of cells
+        parse out the headers, etc.
+        """
+        i = 0
+        if len(self.rows) > 1:
+            for cell in self.rows[1]:
+                if set(cell) != set('-'):
+                    break
+            else:
+                # first row is header
+                self.header_cells = [
+                        format(cell, allowed_styles=self.allowed_text, parent=self)
+                        for cell in self.rows[0]
+                        ]
+                i = 2
+        for row in self.rows[i:]:
+            self.body_cells.append([
+                    format(cell, allowed_styles=self.allowed_text, parent=self)
+                    for cell in row
+                    ])
+        return super(Table, self).finalize()
+
+    @classmethod
+    def is_type(cls, line):
+        if line.startswith('|'):
+            return True, 0, {'line':line}
+        return NO_MATCH
+
+    def to_html(self):
+        result = ['<table>']
+        if self.header_cells:
+            result.append('    <thead>\n        <tr>')
+            for cell in self.header_cells:
+                result.append('            <th>%s</th>' % ''.join([c.to_html() for c in cell]))
+            result.append('        </tr>\n    </thead>')
+        result.append('    <tbody>')
+        for row in self.body_cells:
+            result.append('        <tr>')
+            for cell in row:
+                result.append('            <td>%s</td>' % ''.join([c.to_html() for c in cell]))
+            result.append('        </tr>')
+        result.append('    </tbody>\n</table>')
+        return '\n'.join(result)
+
+    def split_row(self, line):
+        if line[0] != '|' or line[-1] != '|':
+            raise BadFormat('table lines must start and end with | [%r]' % line)
+        cells = []
+        cell = []
+        i = 1
+        while i < len(line):
+            ch = line[i]
+            if ch == '\\':
+                cell.append(line[i+1])
+                i += 2
+                continue
+            elif ch == '|':
+                cells.append(''.join(cell).strip())
+                cell = []
+            else:
+                cell.append(ch)
+            i += 1
+        # there should be nothing in cell at this point
+        if cell:
+            raise BadFormat('table lines must start and end with | [%r]' % line)
+        return cells
+
 class ID(Node):
     type = ID
     allowed_text = None
@@ -1430,7 +1525,7 @@ class Document(object):
         self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
-        blocks = CodeBlock, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
+        blocks = CodeBlock, Table, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
         stream = PPLCStream(text)
         nodes = []
         count = 0

@@ -464,7 +464,6 @@ class TestStonemark(TestCase):
                 <p>Check the <a href="Documentation">Documentation</a> for more details.</p>
                 """).strip())
 
-
     def test_format_image(self):
         test_doc = dedent("""\
                 An introductory paragraph.
@@ -1443,6 +1442,57 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_table(self):
+        test_doc = dedent("""\
+                | Version | Enum | "Fast Enum" | Global Enum |
+                |-----|-----|-----|-----|
+                | 3.9 | 2.31 | 0.80 | 0.40 |
+                | 3.10 | 2.57 | 0.86 | 0.49 |
+                | 3.11 | 7.22 | 0.70 | 0.21 |
+                | 3.12 | 4.50 | 0.69 | 0.15 |
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc.nodes), [Table])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Enum</th>
+                            <th>&quot;Fast Enum&quot;</th>
+                            <th>Global Enum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>3.9</td>
+                            <td>2.31</td>
+                            <td>0.80</td>
+                            <td>0.40</td>
+                        </tr>
+                        <tr>
+                            <td>3.10</td>
+                            <td>2.57</td>
+                            <td>0.86</td>
+                            <td>0.49</td>
+                        </tr>
+                        <tr>
+                            <td>3.11</td>
+                            <td>7.22</td>
+                            <td>0.70</td>
+                            <td>0.21</td>
+                        </tr>
+                        <tr>
+                            <td>3.12</td>
+                            <td>4.50</td>
+                            <td>0.69</td>
+                            <td>0.15</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """).strip(),
+                doc.to_html(),
+                )
 
 
 def shape(document, text=False):
