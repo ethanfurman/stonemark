@@ -47,6 +47,10 @@ currently supported syntax:
                             }
                             ``` or ~~~
 
+    Details/Summary         --> One-line summary here
+                            --# some detail
+                            --# on the following lines
+
     Footnote                Here's a sentence with a footnote. [^1]
     
                             [^1]: This is the footnote.
@@ -91,7 +95,7 @@ import re
 __all__ = [
         'FormatError', 'BadFormat', 'AmbiguousFormat', 'IndentError',
         'Node', 'Heading', 'Paragraph', 'List', 'ListItem', 'CodeBlock', 'BlockQuote', 'Rule',
-        'Link', 'Image', 'IDLink', 'ID', 'Definition', 'Text', 'Table',
+        'Link', 'Image', 'IDLink', 'ID', 'Definition', 'Text', 'Table', 'Detail',
         'Document',
         ]
 
@@ -133,6 +137,7 @@ class NodeType(Flag):
     ID              = auto()
     DEFINITION      = auto()
     TABLE           = auto()
+    DETAIL          = auto()
 
 @export(module)
 class NodeStatus(DocEnum):
@@ -1010,6 +1015,82 @@ class BlockQuote(Node):
         return ''.join(result)
 BlockQuote.allowed_blocks = (BlockQuote, )
 
+class Detail(Node):
+    type = DETAIL
+    # allowed_blocks = CodeBlock, Image, List, ListItem, Paragraph
+    allowed_text = ALL_TEXT
+    terminate_after_children = False
+    blank_line_required = True
+
+    def __init__(self, summary, text, **kwds):
+        super(Detail,self).__init__(**kwds)
+        self.text = text
+        self.summary = summary
+        if isinstance(self.parent, self.__class__):
+            raise BadFormat('nested details not supported (%r)' % line)
+
+    def check(self, line):
+        if self.text is not None:
+            self.items.append(self.text)
+            self.text = None
+            return SAME
+        if match(DTLS, line):
+            if self.items:
+                raise BadFormat('blank line required to separate detail blocks (%r)' % line)
+            return SAME
+        if match(DTLD, line):
+            marker, text = match.groups()
+            self.items.append(text)
+            return SAME
+        return END
+
+    @classmethod
+    def is_type(cls, line):
+        if match(DTLS, line) or match(DTLD, line):
+            marker, text = match().groups()
+            summary = None
+            if marker == '-->':
+                summary = text
+                text = None
+            return True, 0, {'text':text, 'summary':summary}
+        return NO_MATCH
+
+    def finalize(self):
+        # handle sub-elements
+        final_items = []
+        doc = []
+        for item in self.items:
+            if isinstance(item, unicode):
+                # simple text, append it
+                doc.append(item)
+            else:
+                # an embedded node, process any text lines
+                if doc:
+                    doc = Document('\n'.join(doc))
+                    final_items.extend(doc.nodes)
+                doc = []
+                final_items.append(item)
+        if doc:
+            doc = Document('\n'.join(doc))
+            final_items.extend(doc.nodes)
+        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        return super(Detail, self).finalize()
+
+    def to_html(self):
+        start = '\n<details>'
+        end = '</details>'
+        result = []
+        result.append(start)
+        if self.summary:
+            result.append('<summary>%s</summary>' % self.summary)
+        for item in self.items:
+            if isinstance(item, Node):
+                result.append(item.to_html())
+            else:
+                result.append(item)
+        result.append(end)
+        return '\n'.join(result)
+
 class Table(Node):
     type = TABLE
     allowed_text = ALL_TEXT
@@ -1512,7 +1593,7 @@ class Document(object):
         self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
-        blocks = CodeBlock, Table, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
+        blocks = Detail, CodeBlock, Table, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
         stream = PPLCStream(text)
         nodes = []
         count = 0
@@ -1572,6 +1653,8 @@ CL = r'( *)?(.*)'
 BQ = r'(>+)'
 CB = r'    (.*)'
 FCB = r'( *)(```|~~~) ?(.*)'
+DTLS = r'(-->) ?(.*)'
+DTLD = r'(--\|) ?(.*)'
 HR = r'(---+|\*\*\*+)'
 HD = r'(===+|---+)'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'

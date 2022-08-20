@@ -1506,6 +1506,44 @@ class TestStonemark(TestCase):
                 )
 
 
+    def test_detail(self):
+        test_doc = dedent("""\
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <ul>
+                <li>detail 1</li>
+                <li>detail 2</li>
+                <li>detail 3</li>
+                </ul>
+                </details>
+                """).strip(),
+                )
+
+    def test_detail_summary(self):
+        test_doc = dedent("""\
+                --> A Summary
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <summary>A Summary</summary>
+                <ul>
+                <li>detail 1</li>
+                <li>detail 2</li>
+                <li>detail 3</li>
+                </ul>
+                </details>
+                """).strip(),
+                )
+
 def shape(document, text=False):
     result = []
     if isinstance(document, Document):
