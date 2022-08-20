@@ -482,6 +482,22 @@ class TestStonemark(TestCase):
                 <p>A concluding paragraph.</p>
                 """).strip())
 
+    def test_format_split_parens(self):
+        test_doc = dedent("""\
+                A paragraph with a footnote[^1].
+
+                [^1]: a command line parameter is available to set the location (and should be
+                      used for production).
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>A paragraph with a footnote<sup><a href="#footnote-1">[1]</a></sup>.</p>
+
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>a command line parameter is available to set the location (and should be
+                used for production).</td></tr></table></div>
+                """).strip())
+
+
     def test_formatted_doc_1(self):
         test_doc = dedent("""\
                 ==============
@@ -664,17 +680,12 @@ class TestStonemark(TestCase):
                 covered by these instructions.</td></tr></table></div>
 
                 <div id="footnote-2"><table><tr><td style="vertical-align: top"><sup>2</sup></td><td>If the <code>update</code> command results in <code>failed to fetch</code> errors, you can try these commands:
-
                 <pre><code>rm -rf /var/lib/apt/lists/*
                 apt-get clean
                 apt-get update</code></pre>
-
                 <p>And try the <code>update</code> command again.  If you are now having missing key errors, try:</p>
-
                 <pre><code>gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv &lt;MISSING_KEY&gt;</code></pre>
-
                 <p>Then try the <code>update</code> command one more time.</p>
-
                 <p>When <code>update</code> works correctly (no errors) run the <code>dist-upgrade</code> command.</p></td></tr></table></div>
 
                 <hr>

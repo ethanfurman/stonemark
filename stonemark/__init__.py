@@ -95,7 +95,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 0
+version = 0, 2, 1, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -476,7 +476,6 @@ class Paragraph(Node):
             self.__class__ = Heading
             return self.finalize()
         else:
-            # handle sub-elements
             self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
         return super(Paragraph, self).finalize()
 
@@ -725,25 +724,6 @@ class ListItem(Node):
             self.items[0:1] = self.items[0].items
         return super(ListItem, self).finalize()
 
-        for item in self.items:
-            if isinstance(item, unicode):
-                # simple text, append it
-                doc.append(item)
-            else:
-                # an embedded node, process any text lines
-                if doc:
-                    doc = Document('\n'.join(doc))
-                    final_items.extend(doc.nodes)
-                doc = []
-                final_items.append(item)
-        if doc:
-            doc = Document('\n'.join(doc))
-            final_items.extend(doc.nodes)
-        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
-        if isinstance(self.items[0], Paragraph):
-            self.items[0:1] = self.items[0].items
-        return super(ListItem, self).finalize()
-
     def to_html(self, indent=0):
         spacing = ' ' * indent
         start = '%s<li>' % spacing
@@ -848,7 +828,7 @@ class IDLink(Node):
     type = LINK
     allowed_blocks = CodeBlock, List, Image, Paragraph
     allowed_text = ALL_TEXT
-    blank_line = RESET
+    blank_line = INCLUDE
     blank_line_required = False
 
     def __init__(self, marker, text, **kwds):
@@ -869,15 +849,22 @@ class IDLink(Node):
             return SAME
         if match(ID_LINK, line):
             return END
-        self.items.append('\n')
-        if self.reset:
-            return CHILD
+        # self.items.append('\n')
+        # if self.reset:
+        #     return CHILD
         self.items.append(line)
         return SAME
 
     def finalize(self):
         if self.type == 'footnote':
-            self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
+            final_items = []
+            doc = []
+            sub_doc = Document('\n'.join(self.items))
+            final_items.extend(sub_doc.nodes)
+            self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+            if self.items and isinstance(self.items[0], Paragraph):
+                self.items[0:1] = self.items[0].items
+            # self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
             for link in self.links[self.marker]:
                 link.final = True
             keep = True
