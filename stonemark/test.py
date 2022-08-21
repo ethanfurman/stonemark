@@ -1559,82 +1559,82 @@ class TestStonemark(TestCase):
 
     def test_detail_summary(self):
         self.maxDiff = None
-        # test_doc = dedent("""\
-        #         --> A Summary
-        #         --| - detail 1
-        #         --| - detail 2
-        #         --| - detail 3
-        #         """)
-        # doc = Document(test_doc)
-        # self.assertEqual(doc.to_html().strip(), dedent("""\
-        #         <details>
-        #         <summary>A Summary</summary>
-        #         <ul>
-        #         <li>detail 1</li>
-        #         <li>detail 2</li>
-        #         <li>detail 3</li>
-        #         </ul>
-        #         </details>
-        #         """).strip(),
-        #         )
-        # #
-        # test_doc = dedent("""\
-        #         --> `A Summary`
-        #         --| - detail 1
-        #         --| - detail 2
-        #         --| - detail 3
-        #         """)
-        # doc = Document(test_doc)
-        # self.assertEqual(doc.to_html().strip(), dedent("""\
-        #         <details>
-        #         <summary><code>A Summary</code></summary>
-        #         <ul>
-        #         <li>detail 1</li>
-        #         <li>detail 2</li>
-        #         <li>detail 3</li>
-        #         </ul>
-        #         </details>
-        #         """).strip(),
-        #         )
-        # #
-        # test_doc = dedent("""\
-        #         --> A Summary
-        #         --| ```
-        #         --| - detail 1
-        #         --| - detail 2
-        #         --| - detail 3
-        #         --| ```
-        #         """)
-        # doc = Document(test_doc)
-        # self.assertEqual(doc.to_html().strip(), dedent("""\
-        #         <details>
-        #         <summary>A Summary</summary>
-        #         <pre><code>- detail 1
-        #         - detail 2
-        #         - detail 3</code></pre>
-        #         </details>
-        #         """).strip(),
-        #         )
-        # #
-        # test_doc = dedent("""\
-        #         --> `A Summary`
-        #         --| ```
-        #         --| - detail 1
-        #         --| - detail 2
-        #         --| - detail 3
-        #         --| ```
-        #         """)
-        # doc = Document(test_doc)
-        # self.assertEqual(doc.to_html().strip(), dedent("""\
-        #         <details>
-        #         <summary><code>A Summary</code></summary>
-        #         <pre><code>- detail 1
-        #         - detail 2
-        #         - detail 3</code></pre>
-        #         </details>
-        #         """).strip(),
-        #         )
+        test_doc = dedent("""\
+                --> A Summary
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <summary>A Summary</summary>
+                <ul>
+                <li>detail 1</li>
+                <li>detail 2</li>
+                <li>detail 3</li>
+                </ul>
+                </details>
+                """).strip(),
+                )
         #
+        test_doc = dedent("""\
+                --> `A Summary`
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <summary><code>A Summary</code></summary>
+                <ul>
+                <li>detail 1</li>
+                <li>detail 2</li>
+                <li>detail 3</li>
+                </ul>
+                </details>
+                """).strip(),
+                )
+        #
+        test_doc = dedent("""\
+                --> A Summary
+                --| ```
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                --| ```
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <summary>A Summary</summary>
+                <pre><code>- detail 1
+                - detail 2
+                - detail 3</code></pre>
+                </details>
+                """).strip(),
+                )
+        #
+        test_doc = dedent("""\
+                --> `A Summary`
+                --| ```
+                --| - detail 1
+                --| - detail 2
+                --| - detail 3
+                --| ```
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <details>
+                <summary><code>A Summary</code></summary>
+                <pre><code>- detail 1
+                - detail 2
+                - detail 3</code></pre>
+                </details>
+                """).strip(),
+                )
+
         test_doc = dedent("""\
                 crontab output
                 ==============

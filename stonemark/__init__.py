@@ -100,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 2
+version = 0, 2, 3, 5
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -1066,22 +1066,8 @@ class Detail(Node):
             self.summary = format(self.summary, allowed_styles=self.allowed_text, parent=self)
         # handle sub-elements
         final_items = []
-        doc = []
-        for item in self.items:
-            if isinstance(item, unicode):
-                # simple text, append it
-                doc.append(item)
-            else:
-                # an embedded node, process any text lines
-                if doc:
-                    doc = Document('\n'.join(doc))
-                    final_items.extend(doc.nodes)
-                doc = []
-                final_items.append(item)
-        if doc:
-            doc = Document('\n'.join(doc))
-            final_items.extend(doc.nodes)
-        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        doc = Document('\n'.join(self.items))
+        self.items = format(doc.nodes, allowed_styles=self.allowed_text, parent=self)
         return super(Detail, self).finalize()
 
     def to_html(self):
