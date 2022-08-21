@@ -814,7 +814,7 @@ class TestStonemark(TestCase):
 
     def test_code_after_link(self):
         test_doc = dedent("""\
-                [^1] `some code` and 
+                [^1] `some code` and
 
                 [wiki_page] `204` is the `No Content` status code, and indicates success.
 
@@ -1035,6 +1035,8 @@ class TestStonemark(TestCase):
                 >
                 > ``` python
                 > and some code
+                >
+                > and more code
                 > ```
                 >> another quote block
                 > and done
@@ -1042,7 +1044,7 @@ class TestStonemark(TestCase):
                 so there.
                 """)
         doc = Document(test_doc)
-        self.assertEqual(doc.to_html(), dedent("""\
+        self.assertEqual(dedent(doc.to_html()), dedent("""\
                 <blockquote>
                             <h2>A Title</h2>
                             <p>Then some text, followed by</p>
@@ -1050,7 +1052,9 @@ class TestStonemark(TestCase):
                             <li>list item 1</li>
                             <li>list item 2</li>
                             </ul>
-                            <pre><code>and some code</code></pre>
+                            <pre><code>and some code
+
+                            and more code</code></pre>
                             <blockquote>
                                         <p>another quote block</p>
                             </blockquote>
@@ -1058,6 +1062,23 @@ class TestStonemark(TestCase):
                 </blockquote>
 
                 <p>so there.</p>
+                """).strip(),
+                doc.to_html(),
+                )
+
+    def test_code_block_with_blank_line(self):
+        test_doc = dedent("""\
+                ``` python
+                and some code
+
+                and more code
+                ```
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <pre><code>and some code
+
+                and more code</code></pre>
                 """).strip(),
                 doc.to_html(),
                 )
@@ -1143,20 +1164,20 @@ class TestStonemark(TestCase):
                     ---------
                     """)
         doc = Document(test_doc)
-        self.assertEqual(doc.to_html(), dedent("""\
+        self.assertEqual(dedent(doc.to_html()), dedent("""\
                 <h2>Headings</h2>
 
                 <pre><code>=========
                 Heading 1
-                =========</code></pre>
+                =========
 
-                <pre><code>Heading 2
-                =========</code></pre>
+                Heading 2
+                =========
 
-                <pre><code>Heading 3
+                Heading 3
                 ---------</code></pre>
                 """).strip(),
-                doc.to_html(),
+                # doc.to_html(),
                 )
 
     def test_backslash_disappears(self):
@@ -1239,6 +1260,18 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+        test_doc = dedent("""\
+                ```
+                a test of ` backticks in code blocks
+                ```
+                  """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <pre><code>a test of ` backticks in code blocks</code></pre>
+                """).strip(),
+                doc.to_html(),
+                )
+
     def test_a_bunch(self):
         test_doc = dedent("""\
                 1. Start Nutritional Server
@@ -1251,7 +1284,7 @@ class TestStonemark(TestCase):
                    ...
                    ```
 
-                   + if not running, 
+                   + if not running,
                      ```
                      # fnx_start_nutritional_server
                      ```
@@ -1348,7 +1381,7 @@ class TestStonemark(TestCase):
                 root      4262  4247 12 Dec07 ?        14:33:22 /usr/lib/virtualbox/VBoxHeadless --comment Nutritional Server - Master --startvm ...
                 ...
                 ```
-                if not running, 
+                if not running,
                 ```
                 # fnx_start_nutritional_server
                 ```
@@ -1525,21 +1558,119 @@ class TestStonemark(TestCase):
                 )
 
     def test_detail_summary(self):
+        self.maxDiff = None
+        # test_doc = dedent("""\
+        #         --> A Summary
+        #         --| - detail 1
+        #         --| - detail 2
+        #         --| - detail 3
+        #         """)
+        # doc = Document(test_doc)
+        # self.assertEqual(doc.to_html().strip(), dedent("""\
+        #         <details>
+        #         <summary>A Summary</summary>
+        #         <ul>
+        #         <li>detail 1</li>
+        #         <li>detail 2</li>
+        #         <li>detail 3</li>
+        #         </ul>
+        #         </details>
+        #         """).strip(),
+        #         )
+        # #
+        # test_doc = dedent("""\
+        #         --> `A Summary`
+        #         --| - detail 1
+        #         --| - detail 2
+        #         --| - detail 3
+        #         """)
+        # doc = Document(test_doc)
+        # self.assertEqual(doc.to_html().strip(), dedent("""\
+        #         <details>
+        #         <summary><code>A Summary</code></summary>
+        #         <ul>
+        #         <li>detail 1</li>
+        #         <li>detail 2</li>
+        #         <li>detail 3</li>
+        #         </ul>
+        #         </details>
+        #         """).strip(),
+        #         )
+        # #
+        # test_doc = dedent("""\
+        #         --> A Summary
+        #         --| ```
+        #         --| - detail 1
+        #         --| - detail 2
+        #         --| - detail 3
+        #         --| ```
+        #         """)
+        # doc = Document(test_doc)
+        # self.assertEqual(doc.to_html().strip(), dedent("""\
+        #         <details>
+        #         <summary>A Summary</summary>
+        #         <pre><code>- detail 1
+        #         - detail 2
+        #         - detail 3</code></pre>
+        #         </details>
+        #         """).strip(),
+        #         )
+        # #
+        # test_doc = dedent("""\
+        #         --> `A Summary`
+        #         --| ```
+        #         --| - detail 1
+        #         --| - detail 2
+        #         --| - detail 3
+        #         --| ```
+        #         """)
+        # doc = Document(test_doc)
+        # self.assertEqual(doc.to_html().strip(), dedent("""\
+        #         <details>
+        #         <summary><code>A Summary</code></summary>
+        #         <pre><code>- detail 1
+        #         - detail 2
+        #         - detail 3</code></pre>
+        #         </details>
+        #         """).strip(),
+        #         )
+        #
         test_doc = dedent("""\
-                --> A Summary
-                --| - detail 1
-                --| - detail 2
-                --| - detail 3
+                crontab output
+                ==============
+
+                error output
+                ------------
+
+                --> `/usr/local/bin/fetch_pdf_scans`
+                --| ```
+                --| user=mamador;host=192.168.11.96;dir=/home/autoscan
+                --|
+                --| 20220819-222401
+                --| Permission denied, please try again.
+                --| Permission denied, please try again.
+                --| Permission denied (publickey,password).
+                --| rsync: connection unexpectedly closed (0 bytes received so far) [Receiver=3.1.1]
+                --| rsync error: unexplained error (code 255) at io.c(226) [Receiver=3.1.1]
+                --| ```
                 """)
         doc = Document(test_doc)
-        self.assertEqual(doc.to_html().strip(), dedent("""\
+        self.assertEqual(dedent(doc.to_html()).strip(), dedent("""\
+                <h2>crontab output</h2>
+
+                <h3>error output</h3>
+
+
                 <details>
-                <summary>A Summary</summary>
-                <ul>
-                <li>detail 1</li>
-                <li>detail 2</li>
-                <li>detail 3</li>
-                </ul>
+                <summary><code>/usr/local/bin/fetch_pdf_scans</code></summary>
+                <pre><code>user=mamador;host=192.168.11.96;dir=/home/autoscan
+
+                20220819-222401
+                Permission denied, please try again.
+                Permission denied, please try again.
+                Permission denied (publickey,password).
+                rsync: connection unexpectedly closed (0 bytes received so far) [Receiver=3.1.1]
+                rsync error: unexplained error (code 255) at io.c(226) [Receiver=3.1.1]</code></pre>
                 </details>
                 """).strip(),
                 )

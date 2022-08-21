@@ -7,9 +7,8 @@ from . import Document
 @Command(
         source=Spec('name of source file to convert', type=Path),
         target=Spec('name of output file [default: source base name with .html extension]', default='', type=Path),
-	header_sizes=Spec('sizes for the three header categories', MULTI, abbrev='sizes', force_default=(1,2,3)),
-	header_title=Spec('make first header a title', FLAG, abbrev='title'),
-
+        header_sizes=Spec('sizes for the three header categories', MULTI, abbrev='sizes', force_default=(1,2,3)),
+        header_title=Spec('make first header a title', FLAG, abbrev='title'),
         )
 def stonemark(source, target, header_sizes, header_title):
     if not source.exists():

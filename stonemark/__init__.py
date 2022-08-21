@@ -63,17 +63,18 @@ currently supported syntax:
 
     Subscript               H~2~O
     Superscript             X^2^
+
+    Table                 | Syntax | Description |
+                          | ----------- | ----------- |
+                          | Header | Title |
+                          | Paragraph | Text |
+
 """
 
 from __future__ import print_function
 
 # syntax still to do
 # 
-# Table                 | Syntax | Description |
-#                       | ----------- | ----------- |
-#                       | Header | Title |
-#                       | Paragraph | Text |
-#
 # Heading ID            ### My Great Heading {#custom-id}
 #
 # Definition List       term
@@ -99,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 1
+version = 0, 2, 2, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -496,6 +497,7 @@ class Paragraph(Node):
 class CodeBlock(Node):
     type = CODEBLOCK
     allowed_text = PLAIN
+    blank_line = INCLUDE
     blank_line_required = False
 
     def __init__(self, block_type, attrs, **kwds):
@@ -557,7 +559,10 @@ class CodeBlock(Node):
         return NO_MATCH
 
     def finalize(self):
-        if self.block_type != 'indented':
+        if self.block_type == 'indented':
+            while not self.items[-1].strip():
+                self.items.pop()
+        else:
             if self.items[-1].rstrip() != self.block_type:
                 raise BadFormat('missing code block fence %r at line %d' % (self.block_type, self.end_line))
             self.items.pop()
@@ -565,12 +570,12 @@ class CodeBlock(Node):
         return super(CodeBlock, self).finalize()
 
     def to_html(self):
-        code = '<code>'
         pre = '<pre>'
-        if self.language:
-            code = '<pre><code class="language-%s">' % self.language
+        code = '<code>'
         if self.attrs:
             pre = '<pre class="%s">' % self.attrs
+        if self.language:
+            code = '<code class="language-%s">' % self.language
         start = '%s%s' % (pre, code)
         end = '</code></pre>'
         return start + escape('\n'.join(self.items)) + end
@@ -1056,6 +1061,9 @@ class Detail(Node):
         return NO_MATCH
 
     def finalize(self):
+        # handle summary
+        if self.summary:
+            self.summary = format(self.summary, allowed_styles=self.allowed_text, parent=self)
         # handle sub-elements
         final_items = []
         doc = []
@@ -1082,7 +1090,13 @@ class Detail(Node):
         result = []
         result.append(start)
         if self.summary:
-            result.append('<summary>%s</summary>' % self.summary)
+            sums = []
+            for item in self.summary:
+                if isinstance(item, Node):
+                    sums.append(item.to_html())
+                else:
+                    sums.append(item)
+            result.append('<summary>%s</summary>' % ''.join(sums))
         for item in self.items:
             if isinstance(item, Node):
                 result.append(item.to_html())
