@@ -100,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 3
+version = 0, 2, 4, 2
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -268,6 +268,7 @@ class Node(ABC):
         while not isinstance(parent, Document):
             assert self.links is parent.links
             parent = parent.parent
+
 
     def __repr__(self):
         return "<%s: %r>" % (self.__class__.__name__, self.items)
@@ -444,24 +445,24 @@ class Paragraph(Node):
 
     def check(self, line=0):
         stream = self.stream
-        for regex in UL, OL, BQ, CB, FCB:
+        for regex in UL, OL, BQ, CB, FCB, DTLS, DTLD:
+            # paragraph has ended, new block has started
             if match(regex, line):
                 return END
         if match(HD, line):
-            # blank following line?
-            blank_line = stream.peek_line()
-            if blank_line.strip():
-                for regex in UL, OL, BQ, CB, FCB:
-                    if match(regex, blank_line):
-                        break
-                else:
-                    # woops
-                    raise AmbiguousFormat(
-                            'ambiguous line %d: add a subsequent blank line for a header, or have the first '
-                            'non-blank character be a backslash (\\)' % (stream.line_no+1, )
-                            )
-            self.items.append(line)
-            return CONCLUDE
+            # either the ending paragraph is really a header,
+            # or we have a horizontal rule between blocks;
+            # TODO: make the below two lines accurate
+            # if there was no blank line before this node, then we
+            # have a paragraph and an HR
+            following_line = stream.peek_line()
+            if following_line.strip():
+                # non-blank line means horizontal rule
+                return END
+            else:
+                # a following blank line means a header (handled in finalize)
+                self.items.append(line)
+                return CONCLUDE
         if self.items and isinstance(self.items[-1], str) and self.items[-1].endswith('-'):
             self.items[-1] = self.items[-1][:-1] + line
         else:
@@ -472,7 +473,7 @@ class Paragraph(Node):
     def is_type(cls, line):
         if not line.strip() or not line[:1].strip():
             return NO_MATCH
-        for regex in UL, OL, BQ, CB, FCB, HR, HD:
+        for regex in UL, OL, BQ, CB, FCB, HR, HD, DTLS, DTLD:
             if match(regex, line):
                 return NO_MATCH
         return True, 0, {}
@@ -722,7 +723,6 @@ class ListItem(Node):
         return NO_MATCH
 
     def finalize(self):
-        # self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
         # remove paragraph status from item[0] if present
         # handle sub-elements
         final_items = []
@@ -760,12 +760,6 @@ class Rule(Node):
     allowed_text = None
 
     def check(self, line):
-        blank_line = self.stream.peek_line()
-        if blank_line.strip():
-            # woops
-            raise AmbiguousFormat(
-                    'ambiguous line %d: Header? Rule?' % (self.stream.line_no, )
-                    )
         self.items.append(line)
         return CONCLUDE
 
@@ -859,9 +853,6 @@ class IDLink(Node):
             return SAME
         if match(ID_LINK, line):
             return END
-        # self.items.append('\n')
-        # if self.reset:
-        #     return CHILD
         self.items.append(line)
         return SAME
 
@@ -874,7 +865,6 @@ class IDLink(Node):
             self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
             if self.items and isinstance(self.items[0], Paragraph):
                 self.items[0:1] = self.items[0].items
-            # self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
             for link in self.links[self.marker]:
                 link.final = True
             keep = True
@@ -949,7 +939,6 @@ class Link(Text):
 
 class BlockQuote(Node):
     type = QUOTE
-    # allowed_blocks = CodeBlock, Image, List, ListItem, Paragraph
     allowed_text = ALL_TEXT
     terminate_after_children = False
     blank_line_required = False
@@ -1022,7 +1011,6 @@ BlockQuote.allowed_blocks = (BlockQuote, )
 
 class Detail(Node):
     type = DETAIL
-    # allowed_blocks = CodeBlock, Image, List, ListItem, Paragraph
     allowed_text = ALL_TEXT
     terminate_after_children = False
     blank_line_required = True
@@ -1559,7 +1547,6 @@ def format(texts, allowed_styles, parent):
             mask = ~txt.style
             items = format([chars[start+len(marker):end]], allowed_styles, parent=parent)
             if len(items) == 1:
-                # txt.style = items[0].style
                 txt.text = items[0].text
             else:
                 for item in items:
@@ -1590,6 +1577,8 @@ class Document(object):
 
     def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3)):
         self.links = {}
+        # TODO: use `self.blocks` to enable enforcing lead blank lines for headers
+        self.blocks = []
         self.first_header_is_title = first_header_is_title
         self.header_sizes = header_sizes
         #
@@ -1598,8 +1587,8 @@ class Document(object):
         nodes = []
         count = 0
         while stream.skip_blank_lines():
+            line = stream.current_line.rstrip()
             for nt in blocks:
-                line = stream.current_line.rstrip()
                 match, indent, kwds = nt.is_type(line)
                 if match:
                     if nodes and nt is List:

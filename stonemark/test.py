@@ -1148,7 +1148,42 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
-    def test_heading1_in_code_block(self):
+    def test_heading_vs_hr(self):
+        return NotImplemented
+        test_doc = dedent("""\
+                a heading
+                ---------
+
+                a fake heading
+                --------------
+                because of this
+
+                - a list
+                should be a paragraph followed by an hr
+                --------------------
+                    """)
+        doc = Document(test_doc)
+        self.assertEqual(dedent(doc.to_html()), dedent("""\
+                <h3>a heading</h3>
+
+                <p>a fake heading</p>
+
+                <hr>
+
+                <p>because of this</p>
+
+                <ul>
+                <li>a list</li>
+                </ul>
+
+                <p>should be a paragraph followed by an hr</p>
+
+                <hr>
+                """).strip(),
+                # doc.to_html(),
+                )
+
+    def test_heading_in_code_block(self):
         test_doc = dedent("""\
                 Headings
                 ========
@@ -1371,9 +1406,11 @@ class TestStonemark(TestCase):
                 )
 
     def test_a_bunch_more(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 1: Start Nutritional Server
                 ---------------------------
+
                 ```
                 # ssh root@192.168.11.68
                 # ps -efw|grep -i vbox
@@ -1483,7 +1520,7 @@ class TestStonemark(TestCase):
 
                 <p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p>
                 """).strip(),
-                doc.to_html(),
+                # doc.to_html(),
                 )
 
     def test_table(self):
