@@ -100,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 6
+version = 0, 2, 7, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -446,7 +446,7 @@ class Paragraph(Node):
 
     def check(self, line=0):
         stream = self.stream
-        for regex in UL, OL, BQ, CB, FCB, DTLS, DTLD:
+        for regex in UL, OL, CB, FCB, DTLS, DTLD:
             # paragraph has ended, new block has started
             if match(regex, line):
                 return END

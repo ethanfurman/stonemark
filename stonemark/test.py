@@ -1515,11 +1515,11 @@ class TestStonemark(TestCase):
 
     def test_markers_split_across_lines(self):
         test_doc = dedent("""\
-                From [Stackoverflow](http://stackoverflow.com/a/14960494/208880):
+                From [Stackoverflow]:
 
                 By default attachments are stored in the database, but you may choose to store
                 them on the filesystem by setting a System Parameter (via //Settings > Technical
-                \> Parameters > System Parameters//) named `ir_attachment.location`. In order
+                > Parameters > System Parameters//) named `ir_attachment.location`. In order
                 to see this menu you need the `Technical Features` access right.
 
                 This parameter should have the format: `protocol://URI`, and the only supported
@@ -1547,6 +1547,8 @@ class TestStonemark(TestCase):
 
                 - If you remove this parameter you should manually store back the files
                   in the database because the system will only look in the database.
+
+                [Stackoverflow]: http://stackoverflow.com/a/14960494/208880
                 """)
         doc = Document(test_doc)
         self.assertEqual( doc.to_html(), dedent("""\
