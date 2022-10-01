@@ -445,6 +445,19 @@ class TestStonemark(TestCase):
                 <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them are there, anyway?</p>
                 """).strip())
 
+    def test_format_external_link_3(self):
+        test_doc = dedent("""\
+                This is a paragraph talking about [board game resources].  How many of them
+                are there, anyway?
+
+                [board game resources]: http://www.boardgamegeek.com
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc.nodes), [Paragraph])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them are there, anyway?</p>
+                """).strip())
+
     def test_format_wiki_link(self):
         test_doc = dedent("""\
                 Check the [Documentation] for more details.

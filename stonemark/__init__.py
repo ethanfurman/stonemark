@@ -100,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 5
+version = 0, 2, 6, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -922,8 +922,8 @@ class Link(Text):
         self.marker = marker
         self.url = url
         if marker is not None:
-            s_marker = escape(marker[1:])
             if marker[0] == '^':
+                s_marker = escape(marker[1:])
                 self.type = 'footnote'
                 self.text = '<sup><a href="#footnote-%s">[%s]</a></sup>' % (s_marker, s_marker)
                 self.links.setdefault(marker, []).append(self)
@@ -931,14 +931,25 @@ class Link(Text):
                 self.type = 'separate'
                 self.text = '<a href="%%s">%s</a>' % (escape(text), )
                 self.links.setdefault(marker, []).append(self)
-        if url is not None:
+        elif text == url:
+            # either a wiki page link, or the real link will be discovered later
+            self.type = 'self'
+            stext = escape(url)
+            self.marker = url
+            self.text = '<a href="%%s">%s</a>' % stext
+            self.url = '<a href="%s">%s</a>' % (stext, stext)
+            self.links.setdefault(url, []).append(self)
+        elif url is not None:
             self.type = 'simple'
             self.text = '<a href="%s">%s</a>' % (escape(self.url), escape(text))
             self.final = True
 
     def to_html(self):
         if not self.final:
-            raise MissingLink('link %r never found' % (self.marker, ))
+            if self.url is None:
+                raise MissingLink('link %r never found' % (self.marker, ))
+            self.text = self.url
+            self.final = True
         return self.text
 
 class BlockQuote(Node):
@@ -1453,7 +1464,8 @@ def format(texts, allowed_styles, parent, _recurse=False):
                 pos += 1
                 continue
             elif end+1 == len(chars) or peek_char(end+1) not in '[(':
-                # simple wiki page link
+                # either simple wiki page link, or a separately listed url and this
+                # text is also the marker
                 text = ''.join([c.char for c in chars[start+1:end]])
                 link = Link(text=text, url=text, parent=parent)
                 chars[start:end+1] = [link]
