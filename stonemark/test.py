@@ -127,8 +127,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1>Document Title</h1>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -171,8 +170,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1>Document Title</h1>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -214,8 +212,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h2>Document Title</h2>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -260,8 +257,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1>Document Title</h1>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -306,8 +302,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1>Document Title</h1>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -352,8 +347,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h3>Document Title</h3>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -420,8 +414,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph, Rule, IDLink])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about many things.<sup><a href="#footnote-1">[1]</a></sup> The question is:
-                how are those many things related?</p>
+                <p>This is a paragraph talking about many things.<sup><a href="#footnote-1">[1]</a></sup> The question is: how are those many things related?</p>
 
                 <hr>
 
@@ -438,8 +431,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them
-                are there, anyway?</p>
+                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them are there, anyway?</p>
                 """).strip())
 
     def test_format_external_link_2(self):
@@ -450,8 +442,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them
-                are there, anyway?</p>
+                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them are there, anyway?</p>
                 """).strip())
 
     def test_format_wiki_link(self):
@@ -493,8 +484,7 @@ class TestStonemark(TestCase):
         self.assertEqual(doc.to_html(), dedent("""\
                 <p>A paragraph with a footnote<sup><a href="#footnote-1">[1]</a></sup>.</p>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>a command line parameter is available to set the location (and should be
-                used for production).</td></tr></table></div>
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>a command line parameter is available to set the location (and should be used for production).</td></tr></table></div>
                 """).strip())
 
 
@@ -525,8 +515,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1>Document Title</h1>
 
-                <p>In <b>this paragraph</b> we see that we have multiple lines of a <i>single
-                sentence</i>.</p>
+                <p>In <b>this paragraph</b> we see that we have multiple lines of a <i>single sentence</i>.</p>
 
                 <ul>
                 <li>plus a <b><i>two-line</i></b></li>
@@ -658,8 +647,7 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <h2>Step 1: Build your server</h2>
 
-                <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the
-                following commands after the server is operational<sup><a href="#footnote-1">[1]</a></sup>:</p>
+                <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the following commands after the server is operational<sup><a href="#footnote-1">[1]</a></sup>:</p>
 
                 <pre><code>apt-get install openssh-server postgresql-9.1
                 # optional: denyhosts</code></pre>
@@ -669,15 +657,13 @@ class TestStonemark(TestCase):
                 <pre><code>apt-get update
                 apt-get dist-upgrade</code></pre>
 
-                <p>Although not always essential it&apos;s probably a good idea to reboot your server now and make
-                sure it all comes back up and you can login via <code>ssh</code>.</p>
+                <p>Although not always essential it&apos;s probably a good idea to reboot your server now and make sure it all comes back up and you can login via <code>ssh</code>.</p>
 
                 <p>Now we&apos;re ready to start the OpenERP install.</p>
 
                 <hr>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Creating the server, whether with dedicated hardware or as a virtual machine, is not
-                covered by these instructions.</td></tr></table></div>
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Creating the server, whether with dedicated hardware or as a virtual machine, is not covered by these instructions.</td></tr></table></div>
 
                 <div id="footnote-2"><table><tr><td style="vertical-align: top"><sup>2</sup></td><td>If the <code>update</code> command results in <code>failed to fetch</code> errors, you can try these commands:
                 <pre><code>rm -rf /var/lib/apt/lists/*
@@ -844,9 +830,7 @@ class TestStonemark(TestCase):
                 issue -- the difference is that `alert` will also cause text messages and email to be sent.
                 """)
         expected = dedent("""\
-                <p>An OpenERP cron job will monitor the above directory and update the appropriate tables with the information found
-                in the message files.  Another OpenERP cron job will check for missing entries, and change the status of the IP
-                device to <code>FIX</code> if sufficient time has passed:</p>
+                <p>An OpenERP cron job will monitor the above directory and update the appropriate tables with the information found in the message files.  Another OpenERP cron job will check for missing entries, and change the status of the IP device to <code>FIX</code> if sufficient time has passed:</p>
 
                 <ul>
                 <li>daily jobs have a grace period of two physical days</li>
@@ -854,8 +838,7 @@ class TestStonemark(TestCase):
                 <li>quarterly and yearly jobs have a grace period of five business days</li>
                 </ul>
 
-                <p>Besides the standard frequencies, there are two one-time frequencies:  <code>trip</code> and <code>alert</code>.  Both indicate an urgent
-                issue -- the difference is that <code>alert</code> will also cause text messages and email to be sent.</p>
+                <p>Besides the standard frequencies, there are two one-time frequencies:  <code>trip</code> and <code>alert</code>.  Both indicate an urgent issue -- the difference is that <code>alert</code> will also cause text messages and email to be sent.</p>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
@@ -891,8 +874,7 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <h1><code>Document Title</code></h1>
 
-                <p>In this paragraph we see that we have multiple lines of a single
-                sentence.</p>
+                <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
                 <ul>
                 <li>plus a two-line</li>
@@ -1004,8 +986,7 @@ class TestStonemark(TestCase):
                 <blockquote>
                             <blockquote>
                                         <blockquote>
-                                                    <p>third level quote
-                                                    still third</p>
+                                                    <p>third level quote still third</p>
                                         </blockquote>
                                         <p>second</p>
                             </blockquote>
@@ -1251,8 +1232,7 @@ class TestStonemark(TestCase):
 
                 <ul>
                 <li>with a list</li>
-                <li>immediately after
-                which has a multiline entry</li>
+                <li>immediately after which has a multiline entry</li>
                 </ul>
                 """).strip(),
                 doc.to_html(),
@@ -1308,6 +1288,7 @@ class TestStonemark(TestCase):
                 )
 
     def test_a_bunch(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 1. Start Nutritional Server
 
@@ -1392,17 +1373,13 @@ class TestStonemark(TestCase):
                         <ul>
                         <li>To print nutritional labels, ssh to 11.16 and execute:<pre><code>/usr/local/lib/python2.7/dist-packages/fenx/prepNutriPanelFromSSs.py</code></pre></li>
                         </ul>
-                    <li>Override selected label percentage values<p>This allows you to respond with a command like:
-                    <code>006121:FAT_PERC=22:VITD_PER=13,2</code></p><p>This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.</p><p>You can still use the space to separate multiple items.  For example,</p><p><code>007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121</code></p><p>The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.</p><p>This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.</p><p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p></li>
+                    <li>Override selected label percentage values<p>This allows you to respond with a command like: <code>006121:FAT_PERC=22:VITD_PER=13,2</code></p><p>This command will print the nutritional label for item 006121 and will show the fat percentage as 22%, the vitamin D percentage as 13%, and will print 2 labels.</p><p>You can still use the space to separate multiple items.  For example,</p><p><code>007205 006121 006121:FAT_PERC=22:VITD_PER=13,2 007205:POT_PER=4,2 007205 006121</code></p><p>The above command will print item 007205, then 006121, then 2 copies each of both 006121 ahnd 007205 with the changed fat and vit_D percentages, and finally 007205 and 006121 again.  Note that percentage changes made to an item will persist while the application is still running (ie, until you LOF out), so the final two labels show the last overridden values entered during the run cycle.</p><p>This should allow labels to be corrected until a more permanent automatic method can be integrated into the utility.</p><p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p></li>
                         <ul>
-                        <li>When printing nutritional panels the option now exists to override the calculated percentages which,
-                    as we&apos;ve detailed, occasionally result in wrong values due to the specific implementation used.  To
-                    compensate, I&apos;ve added the ability to override specific values when requesting the label to print.
-                    The application prompt, which previously read:<pre><code>LOF to quit or enter as ITEMNO&lt;comma&gt;QTY&lt;space&gt;ITEMNO&lt;space&gt;&lt;etc&gt;:</code></pre><p>now reads:</p><pre><code>LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:</code></pre></li>
+                        <li>When printing nutritional panels the option now exists to override the calculated percentages which, as we&apos;ve detailed, occasionally result in wrong values due to the specific implementation used.  To compensate, I&apos;ve added the ability to override specific values when requesting the label to print. The application prompt, which previously read:<pre><code>LOF to quit or enter as ITEMNO&lt;comma&gt;QTY&lt;space&gt;ITEMNO&lt;space&gt;&lt;etc&gt;:</code></pre><p>now reads:</p><pre><code>LOF to quit or enter as ITEMNO[:nutrient=xx[:nutrient=xx]][,qty]:</code></pre></li>
                         </ul>
                     </ol>
                 """).strip(),
-                doc.to_html(),
+                # doc.to_html(),
                 )
 
     def test_a_bunch_more(self):
@@ -1521,6 +1498,65 @@ class TestStonemark(TestCase):
                 <p>Note: it is possible to set an override percent value that doesn&apos;t conform to the rounding rules that may on subsequent printing within the current run session result in the entered value being rounded.  For example, specifying 13% will print 13% the first pass through, but an immediate reprint will show 15% as the rounding rules specify that values in the 10-50 range be rounded to the nearest 5%.  To avoid this you should only specify valid conforming values as overrides.</p>
                 """).strip(),
                 # doc.to_html(),
+                )
+
+    def test_markers_split_across_lines(self):
+        test_doc = dedent("""\
+                From [Stackoverflow](http://stackoverflow.com/a/14960494/208880):
+
+                By default attachments are stored in the database, but you may choose to store
+                them on the filesystem by setting a System Parameter (via //Settings > Technical
+                \> Parameters > System Parameters//) named `ir_attachment.location`. In order
+                to see this menu you need the `Technical Features` access right.
+
+                This parameter should have the format: `protocol://URI`, and the only supported
+                protocol by default is the local `file://`, for example `file:///filestore`.
+
+                N.B. *The path for the `file://` protocol is taken relative to the OpenERP root
+                path* (location of the OpenERP server), so with `ir_attachment.location` set to
+                `file:///filestore` the attachments will be stored under `<openerp_path>/filestore`.
+
+                The new system also uses a SHA1 hash to generate the filename, so that duplicate
+                files don't take any space.
+
+                In database mode the file content is stored in the `ir_attachment.db_datas column.
+                In filestore mode the file name is stored in the ``ir_attachment.db_datas_fname` column.
+                (The cryptic names are for backwards compatibility)
+
+                ***Warning:***
+
+                - *No automatic conversion mechanism exists between storage methods*.
+
+                - When you set this parameter existing attachments remain stored in the
+                  database, only new ones will be stored in the filesystem. The system
+                  will try both locations so it's not a problem (first looking for
+                  database storage, then filesystem storage).
+
+                - If you remove this parameter you should manually store back the files
+                  in the database because the system will only look in the database.
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>From <a href="http://stackoverflow.com/a/14960494/208880">Stackoverflow</a>:</p>
+
+                <p>By default attachments are stored in the database, but you may choose to store them on the filesystem by setting a System Parameter (via //Settings &gt; Technical &gt; Parameters &gt; System Parameters//) named <code>ir_attachment.location</code>. In order to see this menu you need the <code>Technical Features</code> access right.</p>
+
+                <p>This parameter should have the format: <code>protocol://URI</code>, and the only supported protocol by default is the local <code>file://</code>, for example <code>file:///filestore</code>.</p>
+
+                <p>N.B. <i>The path for the <code>file://</code> protocol is taken relative to the OpenERP root path</i> (location of the OpenERP server), so with <code>ir_attachment.location</code> set to <code>file:///filestore</code> the attachments will be stored under <code>&lt;openerp_path&gt;/filestore</code>.</p>
+
+                <p>The new system also uses a SHA1 hash to generate the filename, so that duplicate files don&apos;t take any space.</p>
+
+                <p>In database mode the file content is stored in the <code>ir_attachment.db_datas column. In filestore mode the file name is stored in the </code><code>ir_attachment.db_datas_fname</code> column. (The cryptic names are for backwards compatibility)</p>
+
+                <p><b><i>Warning:</i></b></p>
+
+                <ul>
+                <li><i>No automatic conversion mechanism exists between storage methods</i>.</li>
+                <li>When you set this parameter existing attachments remain stored in the database, only new ones will be stored in the filesystem. The system will try both locations so it&apos;s not a problem (first looking for database storage, then filesystem storage).</li>
+                <li>If you remove this parameter you should manually store back the files in the database because the system will only look in the database.</li>
+                </ul>
+                """).strip(),
                 )
 
     def test_table(self):

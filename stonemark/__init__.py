@@ -100,7 +100,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 4
+version = 0, 2, 5, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -239,6 +239,7 @@ class Node(ABC):
 
     allowed_blocks = ()
     allowed_text = PLAIN
+    text = None
     start_line = None
     end_line = None
     blank_line = TERMINATE
@@ -420,7 +421,7 @@ class Heading(Node):
                 self.level = first
             else:
                 self.level = second if ch == '=' else third
-        self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
+        self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
         return super(Heading, self).finalize()
 
     @classmethod
@@ -465,6 +466,8 @@ class Paragraph(Node):
                 return CONCLUDE
         if self.items and isinstance(self.items[-1], str) and self.items[-1].endswith('-'):
             self.items[-1] = self.items[-1][:-1] + line
+        elif self.items:
+            self.items.append(' '+line)
         else:
             self.items.append(line)
         return SAME
@@ -483,7 +486,7 @@ class Paragraph(Node):
             self.__class__ = Heading
             return self.finalize()
         else:
-            self.items = format('\n'.join(self.items), allowed_styles=self.allowed_text, parent=self)
+            self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
         return super(Paragraph, self).finalize()
 
     def to_html(self):
@@ -729,7 +732,7 @@ class ListItem(Node):
         doc = []
         sub_doc = Document('\n'.join(self.items))
         final_items.extend(sub_doc.nodes)
-        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        self.items = final_items
         if self.items and isinstance(self.items[0], Paragraph):
             self.items[0:1] = self.items[0].items
         return super(ListItem, self).finalize()
@@ -862,7 +865,8 @@ class IDLink(Node):
             doc = []
             sub_doc = Document('\n'.join(self.items))
             final_items.extend(sub_doc.nodes)
-            self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+            # self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+            self.items = final_items
             if self.items and isinstance(self.items[0], Paragraph):
                 self.items[0:1] = self.items[0].items
             for link in self.links[self.marker]:
@@ -990,7 +994,8 @@ class BlockQuote(Node):
         if doc:
             doc = Document('\n'.join(doc))
             final_items.extend(doc.nodes)
-        self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        # self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
+        self.items = final_items
         return super(BlockQuote, self).finalize()
 
     def to_html(self):
@@ -1053,9 +1058,10 @@ class Detail(Node):
         if self.summary:
             self.summary = format(self.summary, allowed_styles=self.allowed_text, parent=self)
         # handle sub-elements
-        final_items = []
+        # final_items = []
         doc = Document('\n'.join(self.items))
-        self.items = format(doc.nodes, allowed_styles=self.allowed_text, parent=self)
+        # self.items = format(doc.nodes, allowed_styles=self.allowed_text, parent=self)
+        self.items = doc.nodes
         return super(Detail, self).finalize()
 
     def to_html(self):
@@ -1293,7 +1299,7 @@ class PPLCStream(object):
         for _ in range(count):
             self.get_line()
 
-def format(texts, allowed_styles, parent):
+def format(texts, allowed_styles, parent, _recurse=False):
     def f(open, close, start=0, ws_needed=True):
         end = len(chars)
         match_len = len(close or open)
@@ -1363,213 +1369,220 @@ def format(texts, allowed_styles, parent):
     if isinstance(texts, basestring):
         texts = [texts]
     result = []
-    for text in texts:
-        if isinstance(text, Node):
-            # already processed
-            result.append(text)
+    if _recurse:
+        chars = texts
+    else:
+        chars = []
+        # convert to 'c' format
+        for text in texts:
+            if isinstance(text, Node):
+                # already processed
+                chars.append(text)
+                continue
+            else:
+                chars.extend([Text(single=c, parent=parent) for c in text])
+    # look for subgroups: parentheticals, editorial comments, links, etc
+    # link types: internal, wiki, external, footnote
+    pos = end = 0
+    while pos < len(chars):
+        start = pos
+        ch = chars[pos]
+        if ch.final:
+            result.append(ch)
+            pos += 1
             continue
-        if not isinstance(text, list):
-            chars = [Text(single=c, parent=parent) for c in text]
-        else:
-            chars = text
-        # look for subgroups: parentheticals, editorial comments, links, etc
-        # link types: internal, wiki, external, footnote
-        pos = 0
-        while pos < len(chars):
-            start = pos
-            ch = chars[pos]
-            if ch.char == '\\':
-                del chars[pos]
-                pos += 1
-                continue
-            if ch.char == "`":
-                # code
-                end = find("`", "`", start+1, False)
-                if end == -1:
-                    # oops
-                    raise BadFormat( 'failed to find matching "`" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                chars[start:end+1] = [Text(
-                        ''.join([c.char for c in chars[start+1:end]]),
-                        style=CODE,
-                        parent=parent,
-                        )]
-                pos += 1
-                continue
-            if ch.char == '(':
-                # parens
-                end = find('(', ')', start+1, False)
+        if ch.char == '\\':
+            del chars[pos]
+            pos += 1
+            continue
+        if ch.char == "`":
+            # code
+            end = find("`", "`", start+1, False)
+            if end == -1:
+                # oops
+                raise BadFormat( 'failed to find matching "`" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+            chars[start:end+1] = [Text(
+                    ''.join([c.char for c in chars[start+1:end]]),
+                    style=CODE,
+                    parent=parent,
+                    )]
+            pos += 1
+            continue
+        if ch.char == '(':
+            # parens
+            end = find('(', ')', start+1, False)
+            if end == -1:
+                # oops
+                raise BadFormat(
+                        "failed to find matching `)` starting near %r between %r and %r"
+                        % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+            chars[start+1:end] = format(chars[start+1:end], allowed_styles, parent=parent, _recurse=True)
+            pos += 3
+            continue
+        if ch.char == '[':
+            # link
+            if ''.join(c.char for c in chars[pos:pos+2]) == '[[':
+                # possible editoral comment
+                end = find('[[', ']]', pos+2, False)
                 if end == -1:
                     # oops
                     raise BadFormat(
-                            "failed to find matching `)` starting near %r between %r and %r"
+                            "failed to find matching `]]` starting near %r between %r and %r"
                             % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                chars[start+1:end] = format([chars[start+1:end]], allowed_styles, parent=parent)
+                chars[start+1:end+1] = format(chars[start+2:end], allowed_styles, parent=parent, _recurse=True)
                 pos += 3
                 continue
-            if ch.char == '[':
-                # link
-                if ''.join(c.char for c in chars[pos:pos+2]) == '[[':
-                    # possible editoral comment
-                    end = find('[[', ']]', pos+2, False)
+            # look for closing bracket and process link
+            end = find('[', ']', start+1, False)
+            if end == -1:
+                # oops
+                raise BadFormat(
+                        "failed to find matching `]` starting near %r between %r and %r"
+                        % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+            # what kind of link do we have?
+            if chars[start+1].char == '^':
+                # a foot note
+                # remove previous spaces
+                while chars[start-1].char == ' ':
+                    chars.pop(start-1)
+                    start -= 1
+                    end -=1
+                marker = ''.join([c.char for c in chars[start+1:end]])
+                fn = Link(marker=marker, parent=parent)
+                chars[start:end+1] = [fn]
+                pos += 1
+                continue
+            elif end+1 == len(chars) or peek_char(end+1) not in '[(':
+                # simple wiki page link
+                text = ''.join([c.char for c in chars[start+1:end]])
+                link = Link(text=text, url=text, parent=parent)
+                chars[start:end+1] = [link]
+                pos += 1
+                continue
+            else:
+                text = ''.join([c.char for c in chars[start+1:end]])
+                second = end + 2
+                if peek_char(end+1) == '[':
+                    # url is listed separately, save the marker
+                    end = find('[', ']', second, False)
                     if end == -1:
                         # oops
                         raise BadFormat(
-                                "failed to find matching `]]` starting near %r between %r and %r"
+                                "failed to find matching `]` starting near %r between lines %r and %r"
                                 % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                    chars[start+1:end+1] = format([chars[start+2:end]], allowed_styles, parent=parent)
-                    pos += 3
-                    continue
-                # look for closing bracket and process link
-                end = find('[', ']', start+1, False)
-                if end == -1:
-                    # oops
-                    raise BadFormat(
-                            "failed to find matching `]` starting near %r between %r and %r"
-                            % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                # what kind of link do we have?
-                if chars[start+1].char == '^':
-                    # a foot note
-                    # remove previous spaces
-                    while chars[start-1].char == ' ':
-                        chars.pop(start-1)
-                        start -= 1
-                        end -=1
-                    marker = ''.join([c.char for c in chars[start+1:end]])
-                    fn = Link(marker=marker, parent=parent)
-                    chars[start:end+1] = [fn]
-                    pos += 1
-                    continue
-                elif end+1 == len(chars) or peek_char(end+1) not in '[(':
-                    # simple wiki page link
-                    text = ''.join([c.char for c in chars[start+1:end]])
-                    link = Link(text=text, url=text, parent=parent)
+                    marker = ''.join([c.char for c in chars[second:end]])
+                    link = Link(text=text, marker=marker, parent=parent)
                     chars[start:end+1] = [link]
                     pos += 1
                     continue
                 else:
-                    text = ''.join([c.char for c in chars[start+1:end]])
-                    second = end + 2
-                    if peek_char(end+1) == '[':
-                        # url is listed separately, save the marker
-                        end = find('[', ']', second)
-                        if end == -1:
-                            # oops
-                            raise BadFormat(
-                                    "failed to find matching `]` starting near %r between %r and %r"
-                                    % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                        marker = ''.join([c.char for c in chars[second:end]])
-                        link = Link(text=text, marker=marker, parent=parent)
-                        chars[start:end+1] = [link]
-                        pos += 1
-                        continue
-                    else:
-                        # url is between ( and )
-                        end = find('(', ')', second)
-                        if end == -1:
-                            # oops
-                            raise BadFormat(
-                                    "failed to find matching `)` starting near %r between %r and %r"
-                                    % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
-                        url = ''.join([c.char for c in chars[second:end]])
-                        link = Link(text=text, url=url, parent=parent)
-                        chars[start:end+1] = [link]
-                        pos += 1
-                        continue
-            # stars, tildes, underscores, equals, carets
-            if ch.char not in "*~_=^":
-                pos += 1
-                continue
-            single = ch.char
-            double = peek_char(pos, 2)
-            triple = peek_char(pos, 3)
-            if triple == '***':
-                # bold italic
-                marker = '***'
-                ws_needed = True
-            elif double == '**':
-                # bold
-                marker = '**'
-                ws_needed = True
-            elif single == '*':
-                # italic
-                marker = '*'
-                ws_needed = True
-            elif double == '__':
-                # underline
-                marker = '__'
-                ws_needed = True
-            elif double == '==':
-                # highlight
-                marker = '=='
-                ws_needed = True
-            elif double == '~~':
-                # strike-through
-                marker = '~~'
-                ws_needed = True
-            elif single == '~':
-                # subscript
-                marker = '~'
-                ws_needed = False
-            elif single == '^':
-                # superscript
-                marker = '^'
-                ws_needed = False
-            else:
-                # no possible match, continue on
-                pos += 1
-                continue
-            # to be the start of formatting, the previous (non-mark) character must be white space
-            if ws_needed and not ws(pos, forward=False):
-                pos += len(marker)
-                continue
-            # even if preceding white-space is not needed, a succeeding non-whitespace is
-            if not non_ws(pos+len(marker)):
-                pos += len(marker)
-                continue
-            # at this point, we have a valid starting marker, but only if we can find a valid ending marker as well
-            end = find(marker, marker, pos+len(marker), ws_needed)
-            if end == -1:
-                # found nothing
-                pos += len(marker)
-                continue
-            # found something -- does it meet the other criteria?
-            if ws_needed and not ws(end+len(marker)):
-                # failed the white space test
-                pos += len(marker)
-                continue
-            # again, even if succedding white-space is not needed, a preceding non-whitespace is
-            if not non_ws(end, forward=False):
-                pos += len(marker)
-                continue
-            # we have matching markers!
-
-            txt = Text(style=TextType(marker), parent=parent)
-            mask = ~txt.style
-            items = format([chars[start+len(marker):end]], allowed_styles, parent=parent)
-            if len(items) == 1:
-                txt.text = items[0].text
-            else:
-                for item in items:
-                    item.style &= mask
-                txt.items = items
-
-            chars[start:end+len(marker)] = [txt]
+                    # url is between ( and )
+                    end = find('(', ')', second, False)
+                    if end == -1:
+                        # oops
+                        raise BadFormat(
+                                "failed to find matching `)` starting near %r between lines %r and %r"
+                                % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+                    url = ''.join([c.char for c in chars[second:end]])
+                    link = Link(text=text, url=url, parent=parent)
+                    chars[start:end+1] = [link]
+                    pos += 1
+                    continue
+        # stars, tildes, underscores, equals, carets
+        if ch.char not in "*~_=^":
             pos += 1
             continue
-        # made it through the string!
-        # TODO: condense styles if possible; for now, just return it
+        single = ch.char
+        double = peek_char(pos, 2)
+        triple = peek_char(pos, 3)
+        if triple == '***':
+            # bold italic
+            marker = '***'
+            ws_needed = True
+        elif double == '**':
+            # bold
+            marker = '**'
+            ws_needed = True
+        elif single == '*':
+            # italic
+            marker = '*'
+            ws_needed = True
+        elif double == '__':
+            # underline
+            marker = '__'
+            ws_needed = True
+        elif double == '==':
+            # highlight
+            marker = '=='
+            ws_needed = True
+        elif double == '~~':
+            # strike-through
+            marker = '~~'
+            ws_needed = True
+        elif single == '~':
+            # subscript
+            marker = '~'
+            ws_needed = False
+        elif single == '^':
+            # superscript
+            marker = '^'
+            ws_needed = False
+        else:
+            # no possible match, continue on
+            pos += 1
+            continue
+        # to be the start of formatting, the previous (non-mark) character must be white space
+        if ws_needed and not ws(pos, forward=False):
+            pos += len(marker)
+            continue
+        # even if preceding white-space is not needed, a succeeding non-whitespace is
+        if not non_ws(pos+len(marker)):
+            pos += len(marker)
+            continue
+        # at this point, we have a valid starting marker, but only if we can find a valid ending marker as well
+        end = find(marker, marker, pos+len(marker), ws_needed)
+        if end == -1:
+            # found nothing
+            pos += len(marker)
+            continue
+        # found something -- does it meet the other criteria?
+        if ws_needed and not ws(end+len(marker)):
+            # failed the white space test
+            pos += len(marker)
+            continue
+        # again, even if succedding white-space is not needed, a preceding non-whitespace is
+        if not non_ws(end, forward=False):
+            pos += len(marker)
+            continue
+        # we have matching markers!
 
-        string = []
-        for ch in chars:
-            if ch.text is not None or ch.items:
-                if string:
-                    result.append(Text(''.join(string), parent=parent))
-                    string = []
-                result.append(ch)
-            else:
-                string.append(ch.char)
-        if string:
-            result.append(Text(''.join(string), parent=parent))
+        txt = Text(style=TextType(marker), parent=parent)
+        mask = ~txt.style
+        items = format(chars[start+len(marker):end], allowed_styles, parent=parent, _recurse=True)
+        if len(items) == 1:
+            txt.text = items[0].text
+        else:
+            for item in items:
+                item.style &= mask
+            txt.items = items
+
+        chars[start:end+len(marker)] = [txt]
+        pos += 1
+        continue
+    # made it through the string!
+    # TODO: condense styles if possible; for now, just return it
+
+    string = []
+    for ch in chars:
+        if ch.text is not None or ch.items:
+            if string:
+                result.append(Text(''.join(string), parent=parent))
+                string = []
+            result.append(ch)
+        else:
+            string.append(ch.char)
+    if string:
+        result.append(Text(''.join(string), parent=parent))
     return result
 
 
@@ -1599,7 +1612,11 @@ class Document(object):
                     break
             else:
                 raise FormatError('no match found at line %d\n%r' % (stream.line_no, line))
-            keep = node.parse()
+            try:
+                keep = node.parse()
+            except Exception as exc:
+                raise
+                raise FormatError('conversion error: %r in\n%r' % (exc.args, node.items))
             if nodes and nt is CodeBlock and node.block_type == 'indented' and isinstance(nodes[-1], List):
                 raise BadFormat('indented code blocks cannot follow lists (line %d)\n%r' % (node.start_line, line))
             if keep:
@@ -1644,7 +1661,7 @@ CB = r'    (.*)'
 FCB = r'( *)(```|~~~) ?(.*)'
 DTLS = r'(-->) ?(.*)'
 DTLD = r'(--\|) ?(.*)'
-HR = r'(---+|\*\*\*+)'
+HR = r'(---+|\*\*\*+)$'
 HD = r'(===+|---+)'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
 EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b' 
