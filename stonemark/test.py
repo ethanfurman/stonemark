@@ -1519,7 +1519,7 @@ class TestStonemark(TestCase):
 
                 By default attachments are stored in the database, but you may choose to store
                 them on the filesystem by setting a System Parameter (via //Settings > Technical
-                > Parameters > System Parameters//) named `ir_attachment.location`. In order
+                \> Parameters > System Parameters//) named `ir_attachment.location`. In order
                 to see this menu you need the `Technical Features` access right.
 
                 This parameter should have the format: `protocol://URI`, and the only supported
