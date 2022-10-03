@@ -401,6 +401,13 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( doc.to_html(), "<p><b>this is <i>really important</i> important info</b></p>")
 
+    def test_format_non_lspha(self):
+        test_doc = dedent("""\
+                **this is important info**!
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( doc.to_html(), "<p><b>this is important info</b>!</p>")
+
     def test_format_footnote(self):
         self.maxDiff = None
         test_doc = dedent("""\
@@ -456,6 +463,17 @@ class TestStonemark(TestCase):
         self.assertEqual( shape(doc.nodes), [Paragraph])
         self.assertEqual( doc.to_html(), dedent("""\
                 <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">board game resources</a>.  How many of them are there, anyway?</p>
+                """).strip())
+
+    def test_format_external_link_4(self):
+        test_doc = dedent("""\
+                This is a paragraph talking about [](http://www.boardgamegeek.com).  How many of them
+                are there, anyway?
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc.nodes), [Paragraph])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>This is a paragraph talking about <a href="http://www.boardgamegeek.com">http://www.boardgamegeek.com</a>.  How many of them are there, anyway?</p>
                 """).strip())
 
     def test_format_wiki_link(self):
