@@ -36,6 +36,11 @@ currently supported syntax:
                             ...
                             [title | id]: <https://www.example.com>
 
+                            # if no marker defined, then [title] becomes
+                            <a href="title">title</a>
+
+           (link is title)  [](https://www.example.com)
+
     Image                   ![alt text](image.jpg)
 
 
@@ -1496,7 +1501,8 @@ def format(texts, allowed_styles, parent, _recurse=False):
                                 "failed to find matching `)` starting near %r between lines %r and %r"
                                 % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                     url = ''.join([c.char for c in chars[second:end]])
-                    link = Link(text=text, url=url, parent=parent)
+                    # if text is empty, use the url for it
+                    link = Link(text=text or url, url=url, parent=parent)
                     chars[start:end+1] = [link]
                     pos += 1
                     continue
