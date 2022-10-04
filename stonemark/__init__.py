@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 8
+version = 0, 2, 9, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -924,8 +924,9 @@ class Link(Text):
         marker: identifier for footnotes and separate external links
         """
         super(Link, self).__init__(**kwds)
-        self.marker = marker
-        self.url = url
+        self.marker = marker = marker and marker.strip()
+        self.url = url = url and url.strip()
+        text = text = text and text.strip()
         if marker is not None:
             if marker[0] == '^':
                 s_marker = escape(marker[1:])
@@ -942,17 +943,17 @@ class Link(Text):
             stext = escape(url)
             self.marker = url
             self.text = '<a href="%%s">%s</a>' % stext
-            self.url = '<a href="%s">%s</a>' % (stext, stext)
+            self.url = '<a href="%s">%s</a>' % (url, stext)
             self.links.setdefault(url, []).append(self)
         elif url is not None:
             self.type = 'simple'
-            self.text = '<a href="%s">%s</a>' % (escape(self.url), escape(text))
+            self.text = '<a href="%s">%s</a>' % (url, escape(text))
             self.final = True
 
     def to_html(self):
         if not self.final:
             if self.url is None:
-                raise MissingLink('link %r never found' % (self.marker, ))
+                raise MissingLink('link %r never found' % (marker, ))
             self.text = self.url
             self.final = True
         return self.text

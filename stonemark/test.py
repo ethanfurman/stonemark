@@ -1781,6 +1781,16 @@ class TestStonemark(TestCase):
                 """).strip(),
                 )
 
+    def test_link_href_not_escaped(self):
+        test_doc = dedent("""\
+                [ <main_file>.py ]
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(dedent(doc.to_html()).strip(), dedent("""\
+                <p><a href="<main_file>.py">&lt;main_file&gt;.py</a></p>
+                """).strip())
+
+
 def shape(document, text=False):
     result = []
     if isinstance(document, Document):
