@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 9
+version = 0, 2, 10, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -329,7 +329,7 @@ class Node(ABC):
                 self.end_line = None
             elif status is CHILD:
                 self.children = True
-                self.reset = False
+                # self.reset = False
                 self.end_line = None
                 for child in self.allowed_blocks:
                     match, offset, kwds = child.is_type(line)
@@ -703,6 +703,8 @@ class ListItem(Node):
             self.regex = OL
 
     def check(self, line):
+        # if blank line seen, make sure List knows about it
+        self.parent.reset = True
         if not self.items:
             self.items.append(self.text)
             self.text = None

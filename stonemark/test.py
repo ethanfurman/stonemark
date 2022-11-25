@@ -1790,6 +1790,32 @@ class TestStonemark(TestCase):
                 <p><a href="<main_file>.py">&lt;main_file&gt;.py</a></p>
                 """).strip())
 
+    def test_multiple_lists(self):
+        test_doc = dedent("""\
+                - 192.168.11.x  traditional pajaro network.  labeltime accepts connections from this network
+
+                + 192.168.8-11.x expanded pajaro network.
+                + /21 netmask, aka 255.255.248.0.  
+                + printers are moved to 192.168.10.x generally, and cameras to 192.168.8.x.  workstation can talk to devices on this network
+
+                * 192.168.1.x north bay network.  openvpn to 192.168.11.254
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html().strip(), dedent("""\
+                <ul>
+                <li>192.168.11.x  traditional pajaro network.  labeltime accepts connections from this network</li>
+                </ul>
+
+                <ul>
+                <li>192.168.8-11.x expanded pajaro network.</li>
+                <li>/21 netmask, aka 255.255.248.0.</li>
+                <li>printers are moved to 192.168.10.x generally, and cameras to 192.168.8.x.  workstation can talk to devices on this network</li>
+                </ul>
+
+                <ul>
+                <li>192.168.1.x north bay network.  openvpn to 192.168.11.254</li>
+                </ul>
+                """).strip())
 
 def shape(document, text=False):
     result = []
