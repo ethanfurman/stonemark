@@ -57,7 +57,7 @@ currently supported syntax:
                             --# on the following lines
 
     Footnote                Here's a sentence with a footnote. [^1]
-    
+
                             [^1]: This is the footnote.
 
     Strikethrough           ~~The world is flat.~~
@@ -79,7 +79,7 @@ currently supported syntax:
 from __future__ import print_function
 
 # syntax still to do
-# 
+#
 # Heading ID            ### My Great Heading {#custom-id}
 #
 # Definition List       term
@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 10
+version = 0, 2, 11, 4
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -151,7 +151,7 @@ class NodeStatus(DocEnum):
     used by check() to determine effect of next line
     """
     END             = 'not part of the current node (typically a blank line)'
-    SAME            = 'part of the current node' 
+    SAME            = 'part of the current node'
     CHILD           = 'begins a new child node'
     CONCLUDE        = 'last line of the current node (e.g. a fenced code block)'
 
@@ -1231,7 +1231,7 @@ class PPLCStream(object):
             self.chars = list(self.data.pop()) + ['\n']
 
     def __bool__(self):
-        return bool(self.current_line) 
+        return bool(self.current_line)
     __nonzero__ = __bool__
 
     def get_char(self):
@@ -1685,9 +1685,9 @@ DTLD = r'(--\|) ?(.*)'
 HR = r'(---+|\*\*\*+)$'
 HD = r'(===+|---+)'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
-EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b' 
-WIKI_LINK = r'\b\[((?!^).*?)\]\b' 
-FOOT_NOTE_LINK = r'\[(\^.*?)\]:' 
+EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
+WIKI_LINK = r'\b\[((?!^).*?)\]\b'
+FOOT_NOTE_LINK = r'\[(\^.*?)\]:'
 IMAGE_LINK = r'^!\[([^]]*)]\((.*)\)$'
 
 NO_MATCH = False, 0, {}

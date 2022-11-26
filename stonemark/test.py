@@ -1795,7 +1795,7 @@ class TestStonemark(TestCase):
                 - 192.168.11.x  traditional pajaro network.  labeltime accepts connections from this network
 
                 + 192.168.8-11.x expanded pajaro network.
-                + /21 netmask, aka 255.255.248.0.  
+                + /21 netmask, aka 255.255.248.0.
                 + printers are moved to 192.168.10.x generally, and cameras to 192.168.8.x.  workstation can talk to devices on this network
 
                 * 192.168.1.x north bay network.  openvpn to 192.168.11.254
