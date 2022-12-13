@@ -277,7 +277,16 @@ class Node(ABC):
 
 
     def __repr__(self):
-        return "<%s: %r>" % (self.__class__.__name__, self.items)
+        items = "items=%r" % (self.items, )
+        other = self._repr()
+        if other:
+            text = '%s, %s' % (other, items)
+        else:
+            text = items
+        return "<%s: start_line=%r, %s>" % (self.__class__.__name__, self.start_line, text)
+
+    def _repr(self):
+        return ""
 
     def parse(self):
         items = self.items
@@ -320,7 +329,12 @@ class Node(ABC):
                 elif status is CONCLUDE:
                     # line was added by check(), skip the line here
                     stream.skip_line()
-                keep = self.finalize()
+                try:
+                    keep = self.finalize()
+                except FormatError:
+                    raise
+                except Exception:
+                    raise FormatError('Unable to convert %r' % (self, ))
                 break
             elif status is SAME:
                 # line was added by check(); reset reset and end_line and skip line
@@ -395,6 +409,9 @@ class Heading(Node):
         super(Heading, self).__init__(**kwds)
         self.level = level
         self.text = level
+
+    def _repr(self):
+        return 'level=%r, text=%r' % (self.level, self.text)
 
     def check(self, line):
         # this is only called when handling a level 1 header
@@ -928,7 +945,7 @@ class Link(Text):
         super(Link, self).__init__(**kwds)
         self.marker = marker = marker and marker.strip()
         self.url = url = url and url.strip()
-        text = text = text and text.strip()
+        text = text and text.strip()
         if marker is not None:
             if marker[0] == '^':
                 s_marker = escape(marker[1:])
