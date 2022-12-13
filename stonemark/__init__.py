@@ -631,7 +631,7 @@ class Image(Node):
         for txt in self.items:
             alt_text.append(txt.to_html())
         alt_text = ''.join(alt_text)
-        return '<img src="%s" alt="%s">' % (self.url, alt_text)
+        return '<p><img src="%s" alt="%s"></p>' % (self.url, alt_text)
 
 
 class List(Node):
