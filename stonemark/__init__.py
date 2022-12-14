@@ -41,7 +41,8 @@ currently supported syntax:
 
            (link is title)  [](https://www.example.com)
 
-    Image                   ![alt text](image.jpg)
+    Image                   ![alt text](image.jpg "title")
+                            nb: title not yet supported
 
 
     Fenced Code Block       ``` or ~~~
@@ -631,8 +632,7 @@ class Image(Node):
         for txt in self.items:
             alt_text.append(txt.to_html())
         alt_text = ''.join(alt_text)
-        return '<p><img src="%s" alt="%s"></p>' % (self.url, alt_text)
-
+        return '\n<div><img src="%s" alt="%s"></div>\n' % (self.url, alt_text)
 
 class List(Node):
     type = O_LIST | U_LIST

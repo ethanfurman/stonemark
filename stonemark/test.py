@@ -321,6 +321,7 @@ class TestStonemark(TestCase):
                 """).strip())
 
     def test_simple_doc_6(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 Document Title
                 --------------
@@ -330,6 +331,8 @@ class TestStonemark(TestCase):
 
                 - plus a two-line
                 - list for good measure
+
+                  ![and a generic image](some_image.png)
 
                 ---
 
@@ -343,7 +346,6 @@ class TestStonemark(TestCase):
                 """)
 
         doc = Document(test_doc)
-        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem], Rule, Paragraph, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
                 <h3>Document Title</h3>
 
@@ -351,7 +353,9 @@ class TestStonemark(TestCase):
 
                 <ul>
                 <li>plus a two-line</li>
-                <li>list for good measure</li>
+                <li>list for good measure
+                <div><img src="some_image.png" alt="and a generic image"></div>
+                </li>
                 </ul>
 
                 <hr>
@@ -362,6 +366,7 @@ class TestStonemark(TestCase):
 
                 <pre><code>and another code block!</code></pre>
                 """).strip())
+        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [Image]], Rule, Paragraph, CodeBlock, CodeBlock])
 
     def test_failure_1(self):
         test_doc = dedent("""\
@@ -499,7 +504,9 @@ class TestStonemark(TestCase):
         self.assertEqual( doc.to_html(), dedent("""\
                 <p>An introductory paragraph.</p>
 
-                <img src="https://www.image_library/photos/rivets.png" alt="<i>a riveting picture</i>">
+
+                <div><img src="https://www.image_library/photos/rivets.png" alt="<i>a riveting picture</i>"></div>
+
 
                 <p>A concluding paragraph.</p>
                 """).strip())
@@ -615,7 +622,9 @@ class TestStonemark(TestCase):
 
                 <p>Is a &amp; b = a ?  Yes.</p>
 
-                <img src="https://www.fake.com/images/123.png" alt="someone sayd, &quot;OReily?&quot;">
+
+                <div><img src="https://www.fake.com/images/123.png" alt="someone sayd, &quot;OReily?&quot;"></div>
+
 
                 <hr>
 
