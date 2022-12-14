@@ -42,7 +42,6 @@ currently supported syntax:
            (link is title)  [](https://www.example.com)
 
     Image                   ![alt text](image.jpg "title")
-                            nb: title not yet supported
 
 
     Fenced Code Block       ``` or ~~~
@@ -612,10 +611,11 @@ class Image(Node):
     type = IMAGE
     allowed_text = ALL_TEXT
 
-    def __init__(self, text, url, **kwds):
+    def __init__(self, title, text, url, **kwds):
         super(Image, self).__init__(**kwds)
         self.items = format(text, allowed_styles=self.allowed_text, parent=self)
-        self.url = url
+        self.title = title or ''
+        self.url = url.strip()
 
     def check(self, line):
         return CONCLUDE
@@ -623,8 +623,8 @@ class Image(Node):
     @classmethod
     def is_type(cls, line):
         if match(IMAGE_LINK, line):
-            alt_text, url = match().groups()
-            return True, 0, {'text': alt_text, 'url': url}
+            alt_text, url, title = match().groups()
+            return True, 0, {'text':alt_text, 'title':title, 'url':url}
         return NO_MATCH
 
     def to_html(self):
@@ -632,7 +632,13 @@ class Image(Node):
         for txt in self.items:
             alt_text.append(txt.to_html())
         alt_text = ''.join(alt_text)
-        return '\n<div><img src="%s" alt="%s"></div>\n' % (self.url, alt_text)
+        if alt_text:
+            alt_text = 'alt="%s"' % alt_text
+        title = self.title
+        if title:
+            title = 'title=%s' % title
+        attrs = ('%s %s' % (title, alt_text)).strip()
+        return '\n<div><img src="%s" %s></div>\n' % (self.url, attrs)
 
 class List(Node):
     type = O_LIST | U_LIST
@@ -1705,7 +1711,7 @@ ID_LINK = r'^\[(\^?.*?)\]: (.*)'
 EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
 WIKI_LINK = r'\b\[((?!^).*?)\]\b'
 FOOT_NOTE_LINK = r'\[(\^.*?)\]:'
-IMAGE_LINK = r'^!\[([^]]*)]\((.*)\)$'
+IMAGE_LINK = r'^!\[([^]]*)]\(([^"]*)(".*")?\)$'
 
 NO_MATCH = False, 0, {}
 WHITE_SPACE = ' \t\n'

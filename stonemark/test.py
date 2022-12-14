@@ -495,7 +495,7 @@ class TestStonemark(TestCase):
         test_doc = dedent("""\
                 An introductory paragraph.
 
-                ![*a riveting picture*](https://www.image_library/photos/rivets.png)
+                ![*a riveting picture*](https://www.image_library/photos/rivets.png "Rivets!")
 
                 A concluding paragraph.
                 """)
@@ -505,7 +505,7 @@ class TestStonemark(TestCase):
                 <p>An introductory paragraph.</p>
 
 
-                <div><img src="https://www.image_library/photos/rivets.png" alt="<i>a riveting picture</i>"></div>
+                <div><img src="https://www.image_library/photos/rivets.png" title="Rivets!" alt="<i>a riveting picture</i>"></div>
 
 
                 <p>A concluding paragraph.</p>
