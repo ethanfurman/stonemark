@@ -368,6 +368,28 @@ class TestStonemark(TestCase):
                 """).strip())
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [Image]], Rule, Paragraph, CodeBlock, CodeBlock])
 
+    def test_simple_doc_7(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                A Small Heading
+                ...............
+
+                1) In this paragraph we see that we have multiple lines of a single
+                sentence, that at first might be construed as a list.
+
+                2) And here we have another imposter list, which is actually another
+                paragraph.
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( doc.to_html(), dedent("""\
+                <h4>A Small Heading</h4>
+
+                <p>1) In this paragraph we see that we have multiple lines of a single sentence, that at first might be construed as a list.</p>
+
+                <p>2) And here we have another imposter list, which is actually another paragraph.</p>
+                """).strip())
+        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, Paragraph])
+
     def test_failure_1(self):
         test_doc = dedent("""\
                 Document Title

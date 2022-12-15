@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 11
+version = 0, 2, 12, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -334,7 +334,7 @@ class Node(ABC):
                 except FormatError:
                     raise
                 except Exception:
-                    raise FormatError('Unable to convert %r' % (self, ))
+                    raise
                 break
             elif status is SAME:
                 # line was added by check(); reset reset and end_line and skip line
@@ -346,7 +346,7 @@ class Node(ABC):
                 # self.reset = False
                 self.end_line = None
                 for child in self.allowed_blocks:
-                    match, offset, kwds = child.is_type(line)
+                    match, offset, kwds = child.is_type(line, stream.peek_line())
                     if match:
                         new_indent = self.indent + offset
                         child = child(stream=stream, indent=new_indent, parent=self, **kwds)
@@ -374,7 +374,7 @@ class Node(ABC):
         raise NotImplementedError
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         """
         checks if next line(s) are this node's type
 
@@ -426,13 +426,13 @@ class Heading(Node):
 
 
     def finalize(self):
-        first, second, third = self.parent.header_sizes
+        first, second, third, fourth = self.parent.header_sizes
         line = self.items[-1].strip()
         chars = set(line)
         ch = chars.pop()
         # chars should now be empty
-        if chars or len(line) < 3 or ch not in '=-':
-            raise BadFormat('Heading must consist of = or - and be at least three characters long')
+        if chars or len(line) < 3 or ch not in '=-.':
+            raise BadFormat('Heading must consist of `=` or `-` or `.` and be at least three characters long')
         if self.level == first and ch != '=':
             raise BadFormat('Top level Headings must end with at least three = characters')
         self.items.pop()
@@ -441,13 +441,19 @@ class Heading(Node):
         elif not self.level:
             if self.parent.first_header_is_title and self.sequence == 0:
                 self.level = first
+            elif ch == '=':
+                self.level = second
+            elif ch == '-':
+                self.level = third
+            elif ch == '.':
+                self.level = fourth
             else:
-                self.level = second if ch == '=' else third
+                raise Exception('unknown header character: %r' % ch)
         self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
         return super(Heading, self).finalize()
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         chars = set(line.strip())
         if len(chars) == 1 and len(line) >= 3 and chars.pop() == '=':
             return True, 0, {'level': 'first'}
@@ -468,10 +474,12 @@ class Paragraph(Node):
 
     def check(self, line=0):
         stream = self.stream
-        for regex in UL, OL, CB, BQ, FCB, DTLS, DTLD:
-            # paragraph has ended, new block has started
-            if match(regex, line):
-                return END
+        if self.items:
+            # paragraph may have ended
+            for regex in UL, OL, CB, BQ, FCB, DTLS, DTLD:
+                # paragraph has ended, new block has started
+                if match(regex, line):
+                    return END
         if match(HD, line):
             # either the ending paragraph is really a header,
             # or we have a horizontal rule between blocks;
@@ -495,12 +503,9 @@ class Paragraph(Node):
         return SAME
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if not line.strip() or not line[:1].strip():
             return NO_MATCH
-        for regex in UL, OL, BQ, CB, FCB, HR, HD, DTLS, DTLD:
-            if match(regex, line):
-                return NO_MATCH
         return True, 0, {}
 
     def finalize(self):
@@ -575,7 +580,7 @@ class CodeBlock(Node):
             return SAME
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(FCB, line):
             indent, block_type, attrs = match().groups()
             indent = indent and len(indent) or 0
@@ -621,7 +626,7 @@ class Image(Node):
         return CONCLUDE
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(IMAGE_LINK, line):
             alt_text, url, title = match().groups()
             return True, 0, {'text':alt_text, 'title':title, 'url':url}
@@ -676,14 +681,18 @@ class List(Node):
             raise BadFormat('attempt to change list marker inside a list at line %d' % self.stream.line_no)
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(UL, line):
             indent, marker, text = match().groups()
             indent = indent and len(indent) or 0
+            if next_line[:1].strip() and not match(UL, next_line):
+                return NO_MATCH
             return True, indent, {'marker': marker, 'list_type': U_LIST}
         elif match(OL, line):
             indent, number, marker, text = match().groups()
             indent = indent and len(indent) or 0
+            if next_line[:1].strip() and not match(OL, next_line):
+                return NO_MATCH
             return True, indent, {'marker': marker, 'list_type': O_LIST}
         return NO_MATCH
 
@@ -744,7 +753,7 @@ class ListItem(Node):
         return SAME
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(UL, line):
             indent, marker, text = match().groups()
             indent = indent and len(indent) or 0
@@ -797,7 +806,7 @@ class Rule(Node):
         return CONCLUDE
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         chars = set(line)
         if len(line) >= 3 and len(chars) == 1 and chars.pop() in '-*':
             return True, 0, {}
@@ -910,7 +919,7 @@ class IDLink(Node):
         return keep
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(ID_LINK, line):
             marker, text = match().groups()
             return True, 0, {'marker': marker, 'text': text}
@@ -1013,7 +1022,7 @@ class BlockQuote(Node):
 
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(BQ, line):
             return True, 0, {}
         return NO_MATCH
@@ -1085,7 +1094,7 @@ class Detail(Node):
         return END
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if match(DTLS, line) or match(DTLD, line):
             marker, text = match().groups()
             summary = None
@@ -1177,7 +1186,7 @@ class Table(Node):
         return super(Table, self).finalize()
 
     @classmethod
-    def is_type(cls, line):
+    def is_type(cls, line, next_line):
         if line.startswith('|'):
             return True, 0, {'line':line}
         return NO_MATCH
@@ -1632,21 +1641,28 @@ def format(texts, allowed_styles, parent, _recurse=False):
 
 class Document(object):
 
-    def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3)):
+    def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3, 4)):
         self.links = {}
         # TODO: use `self.blocks` to enable enforcing lead blank lines for headers
         self.blocks = []
         self.first_header_is_title = first_header_is_title
+        if len(header_sizes) == 3:
+            # backwards compatibility
+            if header_sizes[2] == 3:
+                header_sizes = header_sizes + (4, )
+            else:
+                header_sizes = header_sizes + (header_sizes[2], )
         self.header_sizes = header_sizes
         #
-        blocks = Detail, CodeBlock, Table, Heading, List, Rule, IDLink, Image, Paragraph, BlockQuote
+        blocks = Detail, CodeBlock, Table, Heading, List, Rule, IDLink, Image, BlockQuote, Paragraph
         stream = PPLCStream(text)
         nodes = []
         count = 0
         while stream.skip_blank_lines():
             line = stream.current_line.rstrip()
+            next_line = stream.peek_line().rstrip()
             for nt in blocks:
-                match, indent, kwds = nt.is_type(line)
+                match, indent, kwds = nt.is_type(line, next_line)
                 if match:
                     if nodes and nt is List:
                         if indent != 0 and isinstance(nodes[-1], CodeBlock) and nodes[-1].block_type == 'indented':
@@ -1706,7 +1722,7 @@ FCB = r'( *)(```|~~~) ?(.*)'
 DTLS = r'(-->) ?(.*)'
 DTLD = r'(--\|) ?(.*)'
 HR = r'(---+|\*\*\*+)$'
-HD = r'(===+|---+)'
+HD = r'(===+|---+|\.\.\.+)'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
 EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
 WIKI_LINK = r'\b\[((?!^).*?)\]\b'
