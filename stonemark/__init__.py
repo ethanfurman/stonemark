@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 12
+version = 0, 2, 13, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -427,12 +427,7 @@ class Heading(Node):
 
     def finalize(self):
         first, second, third, fourth = self.parent.header_sizes
-        line = self.items[-1].strip()
-        chars = set(line)
-        ch = chars.pop()
-        # chars should now be empty
-        if chars or len(line) < 3 or ch not in '=-.':
-            raise BadFormat('Heading must consist of `=` or `-` or `.` and be at least three characters long')
+        ch = set(self.items[-1].strip()).pop()
         if self.level == first and ch != '=':
             raise BadFormat('Top level Headings must end with at least three = characters')
         self.items.pop()
@@ -1722,7 +1717,7 @@ FCB = r'( *)(```|~~~) ?(.*)'
 DTLS = r'(-->) ?(.*)'
 DTLD = r'(--\|) ?(.*)'
 HR = r'(---+|\*\*\*+)$'
-HD = r'(===+|---+|\.\.\.+)'
+HD = r'(===+|---+|\.\.\.+)$'
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
 EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
 WIKI_LINK = r'\b\[((?!^).*?)\]\b'
