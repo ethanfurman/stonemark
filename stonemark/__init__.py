@@ -960,7 +960,7 @@ class Link(Text):
             if marker[0] == '^':
                 s_marker = escape(marker[1:])
                 self.type = 'footnote'
-                self.text = '<sup><a href="#footnote-%s">[%s]</a></sup>' % (s_marker, s_marker)
+                self.text = '<sup><a href="#footnote-%s">%s</a></sup>' % (s_marker, s_marker)
                 self.links.setdefault(marker, []).append(self)
             else:
                 self.type = 'separate'

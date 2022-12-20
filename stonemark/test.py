@@ -407,7 +407,7 @@ class TestStonemark(TestCase):
                 <p>The list of orders are color coded following this key:</p>
 
                 <ul>
-                <li>Red -- Insufficient stock on hand to pull order<sup><a href="#footnote-1">[1]</a></sup></li>
+                <li>Red -- Insufficient stock on hand to pull order<sup><a href="#footnote-1">1</a></sup></li>
                 <li>Yellow  --  Materials confirmed by warehouse</li>
                 </ul>
 
@@ -473,7 +473,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Paragraph, Rule, IDLink])
         self.assertEqual( doc.to_html(), dedent("""\
-                <p>This is a paragraph talking about many things.<sup><a href="#footnote-1">[1]</a></sup> The question is: how are those many things related?</p>
+                <p>This is a paragraph talking about many things.<sup><a href="#footnote-1">1</a></sup> The question is: how are those many things related?</p>
 
                 <hr>
 
@@ -567,7 +567,7 @@ class TestStonemark(TestCase):
                 """)
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
-                <p>A paragraph with a footnote<sup><a href="#footnote-1">[1]</a></sup>.</p>
+                <p>A paragraph with a footnote<sup><a href="#footnote-1">1</a></sup>.</p>
 
                 <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>a command line parameter is available to set the location (and should be used for production).</td></tr></table></div>
                 """).strip())
@@ -659,7 +659,7 @@ class TestStonemark(TestCase):
                 <li>c &gt; 1</li>
                 </ol>
 
-                <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">[jk]</a></sup></p>
+                <p>To <del>everyone</del> <i>anyone</i> <b>who &lt;hears&gt; this</b> -- HELP!<sup><a href="#footnote-jk">jk</a></sup></p>
 
                 <pre><code>a &lt; b &gt;= c</code></pre>
 
@@ -734,12 +734,12 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <h2>Step 1: Build your server</h2>
 
-                <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the following commands after the server is operational<sup><a href="#footnote-1">[1]</a></sup>:</p>
+                <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the following commands after the server is operational<sup><a href="#footnote-1">1</a></sup>:</p>
 
                 <pre><code>apt-get install openssh-server postgresql-9.1
                 # optional: denyhosts</code></pre>
 
-                <p>Now make sure your server has all the latest versions &amp; patches by doing an update<sup><a href="#footnote-2">[2]</a></sup>:</p>
+                <p>Now make sure your server has all the latest versions &amp; patches by doing an update<sup><a href="#footnote-2">2</a></sup>:</p>
 
                 <pre><code>apt-get update
                 apt-get dist-upgrade</code></pre>
@@ -827,7 +827,7 @@ class TestStonemark(TestCase):
                 [^hah]: and a footnote
                 """)
         expected = dedent("""\
-                <p>Here is <code>some code</code><sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>Here is <code>some code</code><sup><a href="#footnote-hah">hah</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
                 """).strip()
@@ -842,9 +842,9 @@ class TestStonemark(TestCase):
                 [^hah]: and a footnote
                 """)
         expected = dedent("""\
-                <p>Here is <code>some code</code><sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>Here is <code>some code</code><sup><a href="#footnote-hah">hah</a></sup>.</p>
 
-                <p>And then another<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>And then another<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
                 """).strip()
@@ -857,7 +857,7 @@ class TestStonemark(TestCase):
                 [^hah]: and a footnote
                 """)
         expected = dedent("""\
-                <p>Here is (a parenthetical)<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>Here is (a parenthetical)<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
                 """).strip()
@@ -879,7 +879,7 @@ class TestStonemark(TestCase):
                 [^hah]: and a footnote
                 """)
         expected = dedent("""\
-                <p>Here is [editor: wow]<sup><a href="#footnote-hah">[hah]</a></sup>.</p>
+                <p>Here is [editor: wow]<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
                 <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
                 """).strip()
@@ -894,7 +894,7 @@ class TestStonemark(TestCase):
                 [^1]: blah
                 """)
         expected = dedent("""\
-                <p><sup><a href="#footnote-1">[1]</a></sup> <code>some code</code> and</p>
+                <p><sup><a href="#footnote-1">1</a></sup> <code>some code</code> and</p>
 
                 <p><a href="wiki_page">wiki_page</a> <code>204</code> is the <code>No Content</code> status code, and indicates success.</p>
 
