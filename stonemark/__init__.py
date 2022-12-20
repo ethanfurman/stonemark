@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 13
+version = 0, 2, 14, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -764,7 +764,7 @@ class ListItem(Node):
         # handle sub-elements
         final_items = []
         doc = []
-        sub_doc = Document('\n'.join(self.items))
+        sub_doc = Document('\n'.join(self.items), links=self.links)
         final_items.extend(sub_doc.nodes)
         self.items = final_items
         if self.items and isinstance(self.items[0], Paragraph):
@@ -897,7 +897,7 @@ class IDLink(Node):
         if self.type == 'footnote':
             final_items = []
             doc = []
-            sub_doc = Document('\n'.join(self.items))
+            sub_doc = Document('\n'.join(self.items), links=self.links)
             final_items.extend(sub_doc.nodes)
             # self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
             self.items = final_items
@@ -1033,12 +1033,12 @@ class BlockQuote(Node):
             else:
                 # an embedded node, process any text lines
                 if doc:
-                    doc = Document('\n'.join(doc))
+                    doc = Document('\n'.join(doc), links=self.links)
                     final_items.extend(doc.nodes)
                 doc = []
                 final_items.append(item)
         if doc:
-            doc = Document('\n'.join(doc))
+            doc = Document('\n'.join(doc), links=self.links)
             final_items.extend(doc.nodes)
         # self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
         self.items = final_items
@@ -1105,7 +1105,7 @@ class Detail(Node):
             self.summary = format(self.summary, allowed_styles=self.allowed_text, parent=self)
         # handle sub-elements
         # final_items = []
-        doc = Document('\n'.join(self.items))
+        doc = Document('\n'.join(self.items), links=self.links)
         # self.items = format(doc.nodes, allowed_styles=self.allowed_text, parent=self)
         self.items = doc.nodes
         return super(Detail, self).finalize()
@@ -1636,8 +1636,10 @@ def format(texts, allowed_styles, parent, _recurse=False):
 
 class Document(object):
 
-    def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3, 4)):
-        self.links = {}
+    def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3, 4), links=None):
+        if links is None:
+            links = {}
+        self.links = links
         # TODO: use `self.blocks` to enable enforcing lead blank lines for headers
         self.blocks = []
         self.first_header_is_title = first_header_is_title

@@ -390,6 +390,31 @@ class TestStonemark(TestCase):
                 """).strip())
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, Paragraph])
 
+    def test_simple_doc_8(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                The list of orders are color coded following this key:
+
+                - Red -- Insufficient stock on hand to pull order [^1]
+                - Yellow  --  Materials confirmed by warehouse
+
+                [^1]: Within each order the specific ingredient with insufficient stock will display
+                      in red while items with sufficient stock will display in black. 
+
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>The list of orders are color coded following this key:</p>
+
+                <ul>
+                <li>Red -- Insufficient stock on hand to pull order<sup><a href="#footnote-1">[1]</a></sup></li>
+                <li>Yellow  --  Materials confirmed by warehouse</li>
+                </ul>
+
+                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Within each order the specific ingredient with insufficient stock will display in red while items with sufficient stock will display in black.</td></tr></table></div>
+                """).strip())
+        self.assertEqual( shape(doc.nodes), [Paragraph, List, [ListItem, ListItem], IDLink])
+
     def test_failure_1(self):
         test_doc = dedent("""\
                 Document Title
