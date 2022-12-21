@@ -346,7 +346,7 @@ class Node(ABC):
                 # self.reset = False
                 self.end_line = None
                 for child in self.allowed_blocks:
-                    match, offset, kwds = child.is_type(line, stream.peek_line())
+                    match, offset, kwds = child.is_type(stream.last_line, line, stream.peek_line())
                     if match:
                         new_indent = self.indent + offset
                         child = child(stream=stream, indent=new_indent, parent=self, **kwds)
@@ -374,7 +374,7 @@ class Node(ABC):
         raise NotImplementedError
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         """
         checks if next line(s) are this node's type
 
@@ -448,7 +448,7 @@ class Heading(Node):
         return super(Heading, self).finalize()
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         chars = set(line.strip())
         if len(chars) == 1 and len(line) >= 3 and chars.pop() == '=':
             return True, 0, {'level': 'first'}
@@ -467,28 +467,29 @@ class Paragraph(Node):
     type = PARAGRAPH
     allowed_text = ALL_TEXT
 
+    def __init__(self, possible_header=True, **kwds):
+        super(Paragraph, self).__init__(**kwds)
+        self.possible_header = possible_header
+
     def check(self, line=0):
         stream = self.stream
         if self.items:
             # paragraph may have ended
             for regex in UL, OL, CB, BQ, FCB, DTLS, DTLD:
-                # paragraph has ended, new block has started
                 if match(regex, line):
+                    # paragraph has ended, new block has started
                     return END
         if match(HD, line):
             # either the ending paragraph is really a header,
             # or we have a horizontal rule between blocks;
-            # TODO: make the below two lines accurate
-            # if there was no blank line before this node, then we
-            # have a paragraph and an HR
-            following_line = stream.peek_line()
-            if following_line.strip():
-                # non-blank line means horizontal rule
-                return END
-            else:
-                # a following blank line means a header (handled in finalize)
+            # multiple lines in the paragraph means horizontal rule;
+            # no preceding blank line before the block means horizontal rule;
+            # otherwise, single line in paragraph means header
+            if len(self.items) == 1 and self.possible_header:
                 self.items.append(line)
                 return CONCLUDE
+            else:
+                return END
         if self.items and isinstance(self.items[-1], str) and self.items[-1].endswith('-'):
             self.items[-1] = self.items[-1][:-1] + line
         elif self.items:
@@ -498,13 +499,13 @@ class Paragraph(Node):
         return SAME
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if not line.strip() or not line[:1].strip():
             return NO_MATCH
-        return True, 0, {}
+        return True, 0, {'possible_header': not bool(last_line.strip())}
 
     def finalize(self):
-        if match(HD, self.items[-1]):
+        if match(HD, self.items[-1]) and self.possible_header:
             self.__class__ = Heading
             return self.finalize()
         else:
@@ -575,7 +576,7 @@ class CodeBlock(Node):
             return SAME
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(FCB, line):
             indent, block_type, attrs = match().groups()
             indent = indent and len(indent) or 0
@@ -621,7 +622,7 @@ class Image(Node):
         return CONCLUDE
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(IMAGE_LINK, line):
             alt_text, url, title = match().groups()
             return True, 0, {'text':alt_text, 'title':title, 'url':url}
@@ -676,18 +677,14 @@ class List(Node):
             raise BadFormat('attempt to change list marker inside a list at line %d' % self.stream.line_no)
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(UL, line):
             indent, marker, text = match().groups()
             indent = indent and len(indent) or 0
-            if next_line[:1].strip() and not match(UL, next_line):
-                return NO_MATCH
             return True, indent, {'marker': marker, 'list_type': U_LIST}
         elif match(OL, line):
             indent, number, marker, text = match().groups()
             indent = indent and len(indent) or 0
-            if next_line[:1].strip() and not match(OL, next_line):
-                return NO_MATCH
             return True, indent, {'marker': marker, 'list_type': O_LIST}
         return NO_MATCH
 
@@ -748,7 +745,7 @@ class ListItem(Node):
         return SAME
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(UL, line):
             indent, marker, text = match().groups()
             indent = indent and len(indent) or 0
@@ -801,7 +798,7 @@ class Rule(Node):
         return CONCLUDE
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         chars = set(line)
         if len(line) >= 3 and len(chars) == 1 and chars.pop() in '-*':
             return True, 0, {}
@@ -914,7 +911,7 @@ class IDLink(Node):
         return keep
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(ID_LINK, line):
             marker, text = match().groups()
             return True, 0, {'marker': marker, 'text': text}
@@ -1017,7 +1014,7 @@ class BlockQuote(Node):
 
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(BQ, line):
             return True, 0, {}
         return NO_MATCH
@@ -1089,7 +1086,7 @@ class Detail(Node):
         return END
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if match(DTLS, line) or match(DTLD, line):
             marker, text = match().groups()
             summary = None
@@ -1181,7 +1178,7 @@ class Table(Node):
         return super(Table, self).finalize()
 
     @classmethod
-    def is_type(cls, line, next_line):
+    def is_type(cls, last_line, line, next_line):
         if line.startswith('|'):
             return True, 0, {'line':line}
         return NO_MATCH
@@ -1240,8 +1237,7 @@ class PPLCStream(object):
     """
 
     # line_no starts at zero and represents the line number of the line that is accessible by
-    # current_line and would be returned by get_line()
-    # calling get_line() increments line_no, while calling push_line() decrements it
+    # current_line
     line_no = 0
 
     # current_line is the line pointed to by line_no, and the line that *_char functions deal with
@@ -1256,20 +1252,13 @@ class PPLCStream(object):
         self.line_no = 0
         if self.data:
             self.chars = list(self.data.pop()) + ['\n']
+        self.last_line = ''
 
     def __bool__(self):
         return bool(self.current_line)
     __nonzero__ = __bool__
 
-    def get_char(self):
-        ch = self.chars.pop(0)
-        if not self.chars:
-            self.line_no += 1
-            if self.data:
-                self.chars = list(self.data.pop()) + ['\n']
-        return ch
-
-    def get_line(self):
+    def _get_line(self):
         if not self.chars:
             raise EOFError
         line = ''.join(self.chars)
@@ -1285,65 +1274,17 @@ class PPLCStream(object):
             return self.data[-1] + '\n'
         return ''
 
-    def peek_char(self, skip=1, ignore=''):
-        "return next char not in ignore after skipping skip number of chars"
-        for ch in self.current_line:
-            if skip > 0:
-                skip -= 1
-                continue
-            if ch not in ignore:
-                return ch
-        for i in reversed(range(len(self.data))):
-            for ch in (self.data[i]+'\n'):
-                if skip > 0:
-                    skip -= 1
-                    continue
-                if ch not in ignore:
-                    return ch
-        else:
-            return ''
-
-    def push_char(self, ch):
-        if ch is None:
-            return
-        if ch == '\n':
-            if self.chars:
-                # convert existing chars to line, dropping newline char
-                char_line = ''.join(self.chars[:-1])
-                self.chars = []
-                self.data.append(char_line)
-                if self.line_no > 0:
-                    # don't decrement past begining of file
-                    self.line_no -= 1
-            self.chars = [ch]
-        else:
-            self.chars.insert(0, ch)
-
-    def push_line(self, line):
-        if line is None:
-            return
-        char_line = ''.join(self.chars[:-1])
-        self.data.append(char_line)
-        if not line[-1:] == '\n':
-            line += '\n'
-        self.chars = list(line)
-        if self.line_no > 0:
-            # don't decrement past begining of file
-            self.line_no -= 1
-
     def skip_blank_lines(self):
         while self:
-            line = self.get_line()
-            if line is None:
-                break
-            if line.strip():
-                self.push_line(line)
+            if self.current_line.strip():
                 return True
+            self.skip_line()
         return False
 
     def skip_line(self, count=1):
         for _ in range(count):
-            self.get_line()
+            self.last_line = self.current_line
+            self._get_line()
 
 def format(texts, allowed_styles, parent, _recurse=False):
     def f(open, close, start=0, ws_needed=True):
@@ -1659,7 +1600,7 @@ class Document(object):
             line = stream.current_line.rstrip()
             next_line = stream.peek_line().rstrip()
             for nt in blocks:
-                match, indent, kwds = nt.is_type(line, next_line)
+                match, indent, kwds = nt.is_type(stream.last_line, line, next_line)
                 if match:
                     if nodes and nt is List:
                         if indent != 0 and isinstance(nodes[-1], CodeBlock) and nodes[-1].block_type == 'indented':

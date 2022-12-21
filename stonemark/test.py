@@ -21,82 +21,22 @@ class TestCase(TestCase):
 
 class TestPPLCStream(TestCase):
 
-    def test_get_char(self):
-        sample = u'line one\nline two'
-        stream = PPLCStream(sample)
-        result = []
-        line_no = 0
-        while stream:
-            self.assertEqual(stream.line_no, line_no)
-            ch = stream.get_char()
-            result.append(ch)
-            if ch == '\n':
-                line_no += 1
-        self.assertEqual(''.join(result), sample+'\n')
-        self.assertEqual(line_no, 2)
-        self.assertEqual(line_no, stream.line_no)
-
-    def test_get_line(self):
-        sample = u'line one\nline two'
-        stream = PPLCStream(sample)
-        result = []
-        line_no = 0
-        while stream:
-            self.assertEqual(stream.line_no, line_no)
-            line = stream.get_line()
-            result.append(line)
-            line_no += 1
-        self.assertEqual(''.join(result), sample+'\n')
-        self.assertEqual(line_no, 2)
-        self.assertEqual(line_no, stream.line_no)
-
     def test_peek_line(self):
         sample = u'line one\nline two'
         stream = PPLCStream(sample)
         self.assertEqual(stream.current_line, 'line one\n')
         self.assertEqual(stream.peek_line(), 'line two\n')
-        self.assertEqual(stream.get_line(), 'line one\n')
+        stream.skip_line()
         self.assertEqual(stream.current_line, 'line two\n')
         self.assertEqual(stream.peek_line(), '')
-        self.assertEqual(stream.get_line(), 'line two\n')
+        stream.skip_line()
         self.assertEqual(stream.current_line, '')
         try:
-            stream.get_line()
+            stream.skip_line()
         except EOFError:
             pass
-
-    def test_push_char(self):
-        sample = u'line one\nline two'
-        stream = PPLCStream(sample)
-        result = []
-        stream.push_char('2')
-        stream.push_char('4')
-        line_no = 0
-        while stream:
-            self.assertEqual( stream.line_no, line_no)
-            line = stream.get_line()
-            result.append(line)
-            line_no += 1
-        self.assertEqual( ''.join(result), '42'+sample+'\n')
-        self.assertEqual( line_no, 2)
-        self.assertEqual( line_no, stream.line_no)
-
-    def test_push_line(self):
-        sample = u'line one\nline two'
-        stream = PPLCStream(sample)
-        result = []
-        stream.push_line('line zero')
-        line_no = 0
-        while stream:
-            self.assertEqual( stream.line_no, line_no)
-            ch = stream.get_char()
-            result.append(ch)
-            if ch == '\n':
-                line_no += 1
-        self.assertEqual( ''.join(result), 'line zero\n'+sample+'\n')
-        self.assertEqual( line_no, 3)
-        self.assertEqual( line_no, stream.line_no)
-
+        else:
+            raise ValueError('EOFError not raised')
 
 class TestStonemark(TestCase):
     def test_simple_doc_1(self):
@@ -374,25 +314,6 @@ class TestStonemark(TestCase):
                 A Small Heading
                 ...............
 
-                1) In this paragraph we see that we have multiple lines of a single
-                sentence, that at first might be construed as a list.
-
-                2) And here we have another imposter list, which is actually another
-                paragraph.
-                """)
-        doc = Document(test_doc)
-        self.assertEqual( doc.to_html(), dedent("""\
-                <h4>A Small Heading</h4>
-
-                <p>1) In this paragraph we see that we have multiple lines of a single sentence, that at first might be construed as a list.</p>
-
-                <p>2) And here we have another imposter list, which is actually another paragraph.</p>
-                """).strip())
-        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, Paragraph])
-
-    def test_simple_doc_8(self):
-        self.maxDiff = None
-        test_doc = dedent("""\
                 The list of orders are color coded following this key:
 
                 - Red -- Insufficient stock on hand to pull order [^1]
@@ -404,6 +325,8 @@ class TestStonemark(TestCase):
                 """)
         doc = Document(test_doc)
         self.assertEqual( doc.to_html(), dedent("""\
+                <h4>A Small Heading</h4>
+
                 <p>The list of orders are color coded following this key:</p>
 
                 <ul>
@@ -413,7 +336,7 @@ class TestStonemark(TestCase):
 
                 <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Within each order the specific ingredient with insufficient stock will display in red while items with sufficient stock will display in black.</td></tr></table></div>
                 """).strip())
-        self.assertEqual( shape(doc.nodes), [Paragraph, List, [ListItem, ListItem], IDLink])
+        self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem], IDLink])
 
     def test_failure_1(self):
         test_doc = dedent("""\
@@ -1217,15 +1140,19 @@ class TestStonemark(TestCase):
                 )
 
     def test_heading_vs_hr(self):
-        return NotImplemented
+        self.maxDiff = None
         test_doc = dedent("""\
                 a heading
                 ---------
 
-                a fake heading
+                another heading
                 --------------
-                because of this
+                and a paragraph
 
+                followed by a paragraph
+                (because they have at least two lines)
+                --------------------------------------
+                and a new paragraph after a header
                 - a list
                 should be a paragraph followed by an hr
                 --------------------
@@ -1234,11 +1161,15 @@ class TestStonemark(TestCase):
         self.assertEqual(dedent(doc.to_html()), dedent("""\
                 <h3>a heading</h3>
 
-                <p>a fake heading</p>
+                <h3>another heading</h3>
+
+                <p>and a paragraph</p>
+
+                <p>followed by a paragraph (because they have at least two lines)</p>
 
                 <hr>
 
-                <p>because of this</p>
+                <p>and a new paragraph after a header</p>
 
                 <ul>
                 <li>a list</li>
