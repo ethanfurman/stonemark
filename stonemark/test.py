@@ -334,7 +334,7 @@ class TestStonemark(TestCase):
                 <li>Yellow  --  Materials confirmed by warehouse</li>
                 </ul>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Within each order the specific ingredient with insufficient stock will display in red while items with sufficient stock will display in black.</td></tr></table></div>
+                <div class="footnote" id="footnote-1"><sup>1</sup>Within each order the specific ingredient with insufficient stock will display in red while items with sufficient stock will display in black.</div>
                 """).strip())
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem], IDLink])
 
@@ -400,7 +400,7 @@ class TestStonemark(TestCase):
 
                 <hr>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Okay, maybe just the one thing.</td></tr></table></div>
+                <div class="footnote" id="footnote-1"><sup>1</sup>Okay, maybe just the one thing.</div>
                 """).strip())
 
     def test_format_external_link_1(self):
@@ -492,7 +492,7 @@ class TestStonemark(TestCase):
         self.assertEqual(doc.to_html(), dedent("""\
                 <p>A paragraph with a footnote<sup><a href="#footnote-1">1</a></sup>.</p>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>a command line parameter is available to set the location (and should be used for production).</td></tr></table></div>
+                <div class="footnote" id="footnote-1"><sup>1</sup>a command line parameter is available to set the location (and should be used for production).</div>
                 """).strip())
 
 
@@ -598,7 +598,7 @@ class TestStonemark(TestCase):
 
                 <hr>
 
-                <div id="footnote-jk"><table><tr><td style="vertical-align: top"><sup>jk</sup></td><td>Just a joke!  I&apos;m &gt;fine&lt;!</td></tr></table></div>
+                <div class="footnote" id="footnote-jk"><sup>jk</sup>Just a joke!  I&apos;m &gt;fine&lt;!</div>
                 """).strip(), doc.to_html())
 
     def test_footnote_children(self):
@@ -673,16 +673,16 @@ class TestStonemark(TestCase):
 
                 <hr>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>Creating the server, whether with dedicated hardware or as a virtual machine, is not covered by these instructions.</td></tr></table></div>
+                <div class="footnote" id="footnote-1"><sup>1</sup>Creating the server, whether with dedicated hardware or as a virtual machine, is not covered by these instructions.</div>
 
-                <div id="footnote-2"><table><tr><td style="vertical-align: top"><sup>2</sup></td><td>If the <code>update</code> command results in <code>failed to fetch</code> errors, you can try these commands:
+                <div class="footnote" id="footnote-2"><sup>2</sup>If the <code>update</code> command results in <code>failed to fetch</code> errors, you can try these commands:
                 <pre><code>rm -rf /var/lib/apt/lists/*
                 apt-get clean
                 apt-get update</code></pre>
                 <p>And try the <code>update</code> command again.  If you are now having missing key errors, try:</p>
                 <pre><code>gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv &lt;MISSING_KEY&gt;</code></pre>
                 <p>Then try the <code>update</code> command one more time.</p>
-                <p>When <code>update</code> works correctly (no errors) run the <code>dist-upgrade</code> command.</p></td></tr></table></div>
+                <p>When <code>update</code> works correctly (no errors) run the <code>dist-upgrade</code> command.</p></div>
 
                 <hr>
 
@@ -752,7 +752,7 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <p>Here is <code>some code</code><sup><a href="#footnote-hah">hah</a></sup>.</p>
 
-                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                <div class="footnote" id="footnote-hah"><sup>hah</sup>and a footnote</div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
@@ -769,7 +769,7 @@ class TestStonemark(TestCase):
 
                 <p>And then another<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
-                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                <div class="footnote" id="footnote-hah"><sup>hah</sup>and a footnote</div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
@@ -782,7 +782,7 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <p>Here is (a parenthetical)<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
-                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                <div class="footnote" id="footnote-hah"><sup>hah</sup>and a footnote</div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
@@ -804,7 +804,7 @@ class TestStonemark(TestCase):
         expected = dedent("""\
                 <p>Here is [editor: wow]<sup><a href="#footnote-hah">hah</a></sup>.</p>
 
-                <div id="footnote-hah"><table><tr><td style="vertical-align: top"><sup>hah</sup></td><td>and a footnote</td></tr></table></div>
+                <div class="footnote" id="footnote-hah"><sup>hah</sup>and a footnote</div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
@@ -821,7 +821,7 @@ class TestStonemark(TestCase):
 
                 <p><a href="wiki_page">wiki_page</a> <code>204</code> is the <code>No Content</code> status code, and indicates success.</p>
 
-                <div id="footnote-1"><table><tr><td style="vertical-align: top"><sup>1</sup></td><td>blah</td></tr></table></div>
+                <div class="footnote" id="footnote-1"><sup>1</sup>blah</div>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 

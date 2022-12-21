@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 14
+version = 0, 2, 15, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -926,8 +926,8 @@ class IDLink(Node):
 
     def to_html(self):
         s_marker = self.marker[1:]
-        start = '<div id="footnote-%s"><table><tr><td style="vertical-align: top"><sup>%s</sup></td><td>' % (s_marker, s_marker)
-        end = '</td></tr></table></div>'
+        start = '<div class="footnote" id="footnote-%s"><sup>%s</sup>' % (s_marker, s_marker)
+        end = '</div>'
         result = []
         for item in self.items:
             if self.type == 'footnote' and not isinstance(item, Text):
