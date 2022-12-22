@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 15
+version = 0, 2, 16, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -661,12 +661,9 @@ class List(Node):
         if not match(self.regex, line):
             return END
         if self.list_type is U_LIST:
-            indent, marker, text = match().groups()
+            marker, text = match().groups()
         elif self.list_type is O_LIST:
-            indent, number, marker, text = match().groups()
-        indent = indent and len(indent) or 0
-        if indent == 2:
-            raise Exception('huh')
+            number, marker, text = match().groups()
         if marker == self.marker:
             return CHILD
         if self.reset:
@@ -679,13 +676,11 @@ class List(Node):
     @classmethod
     def is_type(cls, last_line, line, next_line):
         if match(UL, line):
-            indent, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': marker, 'list_type': U_LIST}
+            marker, text = match().groups()
+            return True, 0, {'marker': marker, 'list_type': U_LIST}
         elif match(OL, line):
-            indent, number, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': marker, 'list_type': O_LIST}
+            number, marker, text = match().groups()
+            return True, 0, {'marker': marker, 'list_type': O_LIST}
         return NO_MATCH
 
     def premature_end(self, line):
@@ -747,13 +742,11 @@ class ListItem(Node):
     @classmethod
     def is_type(cls, last_line, line, next_line):
         if match(UL, line):
-            indent, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': marker, 'list_type': U_LIST, 'text': text}
+            marker, text = match().groups()
+            return True, 0, {'marker': marker, 'list_type': U_LIST, 'text': text}
         elif match(OL, line):
-            indent, number, marker, text = match().groups()
-            indent = indent and len(indent) or 0
-            return True, indent, {'marker': '%s%s'%(number,marker), 'list_type': O_LIST, 'text': text}
+            number, marker, text = match().groups()
+            return True, 0, {'marker': '%s%s'%(number,marker), 'list_type': O_LIST, 'text': text}
         return NO_MATCH
 
     def finalize(self):
@@ -1651,8 +1644,8 @@ def UID():
 UID = UID()
 match = Var(re.match)
 
-UL = r'(  )?(-|\+|\*) (.*)'
-OL = r'(  )?(\d+)(\.|\)) (.*)'
+UL = r'(-|\+|\*) (.*)'
+OL = r'(\d+)(\.|\)) (.*)'
 CL = r'( *)?(.*)'
 BQ = r'(>+)'
 CB = r'    (.*)'

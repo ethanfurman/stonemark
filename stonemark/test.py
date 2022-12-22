@@ -825,34 +825,6 @@ class TestStonemark(TestCase):
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
-    def test_indented_list(self):
-        self.maxDiff = None
-        test_doc = dedent("""\
-                An OpenERP cron job will monitor the above directory and update the appropriate tables with the information found
-                in the message files.  Another OpenERP cron job will check for missing entries, and change the status of the IP
-                device to `FIX` if sufficient time has passed:
-
-                  - daily jobs have a grace period of two physical days
-                  - weekly and monthly jobs have a grace period of two business days
-                  - quarterly and yearly jobs have a grace period of five business days
-
-                Besides the standard frequencies, there are two one-time frequencies:  `trip` and `alert`.  Both indicate an urgent
-                issue -- the difference is that `alert` will also cause text messages and email to be sent.
-                """)
-        expected = dedent("""\
-                <p>An OpenERP cron job will monitor the above directory and update the appropriate tables with the information found in the message files.  Another OpenERP cron job will check for missing entries, and change the status of the IP device to <code>FIX</code> if sufficient time has passed:</p>
-
-                <ul>
-                <li>daily jobs have a grace period of two physical days</li>
-                <li>weekly and monthly jobs have a grace period of two business days</li>
-                <li>quarterly and yearly jobs have a grace period of five business days</li>
-                </ul>
-
-                <p>Besides the standard frequencies, there are two one-time frequencies:  <code>trip</code> and <code>alert</code>.  Both indicate an urgent issue -- the difference is that <code>alert</code> will also cause text messages and email to be sent.</p>
-                """).strip()
-        self.assertEqual(Document(test_doc).to_html(), expected)
-
-
     def test_coded_headers(self):
         test_doc = dedent("""\
                 ================
