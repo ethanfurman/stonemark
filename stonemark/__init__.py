@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 16
+version = 0, 2, 17, 1
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -1288,8 +1288,11 @@ def format(texts, allowed_styles, parent, _recurse=False):
         i = start
         while i < end:
             if chars[i].char == '\\':
-                del chars[i]
-                i += 1
+                if _recurse:
+                    i += 2
+                else:
+                    del chars[i]
+                    i += 1
                 continue
             possible = ''.join(c.char for c in chars[i:i+match_len])
             if possible == close:
@@ -1303,11 +1306,12 @@ def format(texts, allowed_styles, parent, _recurse=False):
                     close_count += 1
                     if open_count == close_count:
                         return i
-                # check for needed whitespace
-                if ws(i+1):
-                    close_count += 1
-                    if open_count == close_count:
-                        return i
+                else:
+                    # check for needed whitespace
+                    if ws(i+1):
+                        close_count += 1
+                        if open_count == close_count:
+                            return i
             # check for valid open tag
             if possible == open:
                 if not ws_needed or ws(i, forward=False):
@@ -1321,11 +1325,11 @@ def format(texts, allowed_styles, parent, _recurse=False):
             start = pos
         if forward:
             for ch in chars[start:]:
-                if ch.char in '*~_=^.,?!\'"':
+                if not ch.char.isalnum() and ch.char.strip():
                     continue
-                if ws and ch.char in ' \t\n':
+                if ws and not ch.char.strip():
                     return True
-                if not ws and ch.char not in ' \t\n':
+                if not ws and ch.char.strip():
                     return True
                 return False
             return ws
@@ -1333,11 +1337,11 @@ def format(texts, allowed_styles, parent, _recurse=False):
             if start == 0:
                 return ws
             for ch in chars[start-1::-1]:
-                if ch.char in '*~_=^.,?!\'"':
+                if not ch.char.isalnum() and ch.char.strip():
                     continue
-                if ws and ch.char in ' \t\n':
+                if ws and not ch.char.strip():
                     return True
-                if not ws and ch.char not in ' \t\n':
+                if not ws and ch.char.strip():
                     return True
                 return False
             return ws
@@ -1372,8 +1376,11 @@ def format(texts, allowed_styles, parent, _recurse=False):
             pos += 1
             continue
         if ch.char == '\\':
-            del chars[pos]
-            pos += 1
+            if _recurse:
+                pos += 2
+            else:
+                del chars[pos]
+                pos += 1
             continue
         if ch.char == "`":
             # code
@@ -1532,7 +1539,7 @@ def format(texts, allowed_styles, parent, _recurse=False):
             # failed the white space test
             pos += len(marker)
             continue
-        # again, even if succedding white-space is not needed, a preceding non-whitespace is
+        # again, even if succedding white-space is not needed,a preceding non-whitespace is
         if not non_ws(end, forward=False):
             pos += len(marker)
             continue
@@ -1541,7 +1548,7 @@ def format(texts, allowed_styles, parent, _recurse=False):
         txt = Text(style=TextType(marker), parent=parent)
         mask = ~txt.style
         items = format(chars[start+len(marker):end], allowed_styles, parent=parent, _recurse=True)
-        if len(items) == 1:
+        if False: #len(items) == 1:
             txt.text = items[0].text
         else:
             for item in items:

@@ -1111,6 +1111,33 @@ class TestStonemark(TestCase):
                 doc.to_html(),
                 )
 
+    def test_combined_text_formatting(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                __*underlined italic*__
+
+                *__italicized underline__*
+
+                **~~bolded strike-through~~**
+
+                ~~**struck-through bold**~~
+
+                With **punctuation**: In *various ways*(oops).
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p><u><i>underlined italic</i></u></p>
+
+                <p><i><u>italicized underline</u></i></p>
+                
+                <p><b><del>bolded strike-through</del></b></p>
+                
+                <p><del><b>struck-through bold</b></del></p>
+                
+                <p>With <b>punctuation</b>: In *various ways*(oops).</p>
+                """).strip(),
+                )
+
     def test_heading_vs_hr(self):
         self.maxDiff = None
         test_doc = dedent("""\
@@ -1198,14 +1225,15 @@ class TestStonemark(TestCase):
                 )
 
     def test_backslash_remains(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 \\\\*italic\\\\* --> \\\\*italic\\\\*
                 """)
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
-                <p>\\*italic\\* --&gt; \\*italic\\*</p>
+                <p>\\<i>italic\\</i> --&gt; \\<i>italic\\</i></p>
                 """).strip(),
-                doc.to_html(),
+                # doc.to_html(),
                 )
 
     def test_proper_spacing(self):
