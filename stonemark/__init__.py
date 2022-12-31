@@ -105,7 +105,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 2, 17
+version = 0, 2, 18, 3
 
     # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
     # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -445,6 +445,8 @@ class Heading(Node):
             else:
                 raise Exception('unknown header character: %r' % ch)
         self.items = format(self.items, allowed_styles=self.allowed_text, parent=self)
+        if self.parent.first_header_is_title and self.level == first:
+            self.parent.title = re.sub('<[^>]*>','', self.to_html()).strip()
         return super(Heading, self).finalize()
 
     @classmethod
@@ -1576,6 +1578,8 @@ def format(texts, allowed_styles, parent, _recurse=False):
 
 
 class Document(object):
+
+    title = None
 
     def __init__(self, text, first_header_is_title=False, header_sizes=(1, 2, 3, 4), links=None):
         if links is None:
