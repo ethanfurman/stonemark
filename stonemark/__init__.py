@@ -462,7 +462,7 @@ class Heading(Node):
         result = []
         for txt in self.items:
             result.append(txt.to_html())
-        return '%s%s%s' % (start, '\n'.join(result), end)
+        return '%s%s%s' % (start, ''.join(result), end)
 
 
 class Paragraph(Node):

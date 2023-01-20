@@ -87,9 +87,9 @@ class TestStonemark(TestCase):
 
     def test_simple_doc_2(self):
         test_doc = dedent("""\
-                ==============
-                Document Title
-                ==============
+                ================
+                Document *Title*
+                ================
 
                 In this paragraph we see that we have multiple lines of a single
                 sentence.
@@ -108,7 +108,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]], ListItem], CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h1>Document Title</h1>
+                <h1>Document <i>Title</i></h1>
 
                 <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
@@ -217,8 +217,8 @@ class TestStonemark(TestCase):
 
     def test_simple_doc_5(self):
         test_doc = dedent("""\
-                Document Title
-                --------------
+                __Document__ Title
+                ------------------
 
                 In this paragraph we see that we have multiple lines of a single
                 sentence.
@@ -240,7 +240,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc, first_header_is_title=True)
         self.assertEqual( shape(doc.nodes), [Heading, Paragraph, List, [ListItem, ListItem, [List, [ListItem, ListItem]]], Heading, CodeBlock, CodeBlock])
         self.assertEqual( doc.to_html(), dedent("""\
-                <h1>Document Title</h1>
+                <h1><u>Document</u> Title</h1>
 
                 <p>In this paragraph we see that we have multiple lines of a single sentence.</p>
 
@@ -792,6 +792,21 @@ class TestStonemark(TestCase):
                 """)
         expected = dedent("""\
                 <p>Helper for inserting <code>Enum</code> members into a namespace (usually <code>globals()</code>).</p>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
+    def test_parens_in_Header(self):
+        test_doc = dedent("""\
+                =====================
+                (Re)Starting a Server
+                =====================
+
+                `/etc/init.d/a_server restart`
+                """)
+        expected = dedent("""\
+                <h1>(Re)Starting a Server</h1>
+
+                <p><code>/etc/init.d/a_server restart</code></p>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
