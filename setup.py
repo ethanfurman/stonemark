@@ -80,7 +80,7 @@ make = []
 
 data = dict(
        name='stonemark',
-       version='0.2.18',
+       version='0.2.19a1',
        license='BSD License',
        description='a markup language similar to markdown',
        long_description=long_desc,
@@ -113,6 +113,7 @@ data = dict(
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
             'Topic :: Software Development',
             'Topic :: Text Processing :: Markup',
             'Topic :: Text Processing :: Markup :: Markdown',
