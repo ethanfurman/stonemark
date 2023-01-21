@@ -1577,7 +1577,8 @@ def write_file(target, doc, fragment=False, css='stonemark.css'):
         page.append(html_page_head)
         if doc.title:
             page.append(html_page_title % doc.title)
-        page.append(html_page_css % css)
+        if css:
+            page.append(html_page_css % css)
         page.append(html_page_body)
     page.append(doc.to_html())
     if not fragment:
