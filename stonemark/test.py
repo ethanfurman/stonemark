@@ -659,12 +659,12 @@ class TestStonemark(TestCase):
 
                 <p>Either include the <code>OpenSSH</code> and <code>Postgres</code> packages when creating the server, or run the following commands after the server is operational<sup><a href="#footnote-1">1</a></sup>:</p>
 
-                <pre><code>apt-get install openssh-server postgresql-9.1
+                <pre><code class="language-sh">apt-get install openssh-server postgresql-9.1
                 # optional: denyhosts</code></pre>
 
                 <p>Now make sure your server has all the latest versions &amp; patches by doing an update<sup><a href="#footnote-2">2</a></sup>:</p>
 
-                <pre><code>apt-get update
+                <pre><code class="language-sh">apt-get update
                 apt-get dist-upgrade</code></pre>
 
                 <p>Although not always essential it&apos;s probably a good idea to reboot your server now and make sure it all comes back up and you can login via <code>ssh</code>.</p>
@@ -680,7 +680,7 @@ class TestStonemark(TestCase):
                 apt-get clean
                 apt-get update</code></pre>
                 <p>And try the <code>update</code> command again.  If you are now having missing key errors, try:</p>
-                <pre><code>gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv &lt;MISSING_KEY&gt;</code></pre>
+                <pre><code class="language-sh">gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv &lt;MISSING_KEY&gt;</code></pre>
                 <p>Then try the <code>update</code> command one more time.</p>
                 <p>When <code>update</code> works correctly (no errors) run the <code>dist-upgrade</code> command.</p></div>
 
@@ -1030,7 +1030,7 @@ class TestStonemark(TestCase):
                             <li>list item 1</li>
                             <li>list item 2</li>
                             </ul>
-                            <pre><code>and some code
+                            <pre><code class="language-python">and some code
 
                             and more code</code></pre>
                             <blockquote>
@@ -1054,7 +1054,7 @@ class TestStonemark(TestCase):
                 """)
         doc = Document(test_doc)
         self.assertEqual(doc.to_html(), dedent("""\
-                <pre><code>and some code
+                <pre><code class="language-python">and some code
 
                 and more code</code></pre>
                 """).strip(),
@@ -1125,6 +1125,40 @@ class TestStonemark(TestCase):
                 """).strip(),
                 doc.to_html(),
                 )
+
+    def test_fenced_code_block_with_language(self):
+        test_doc = dedent("""\
+                Lead paragraph.
+
+                ``` python
+                for i in range(10):
+                    i
+                ```
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>Lead paragraph.</p>
+
+                <pre><code class="language-python">for i in range(10):
+                    i</code></pre>
+                """).strip())
+
+    def test_fenced_code_block_with_attrs(self):
+        test_doc = dedent("""\
+                Lead paragraph.
+
+                ``` {.sh .purple .red}
+                for i in range(10):
+                    i
+                ```
+                """)
+        doc = Document(test_doc)
+        self.assertEqual(doc.to_html(), dedent("""\
+                <p>Lead paragraph.</p>
+
+                <pre class="purple red"><code class="language-sh">for i in range(10):
+                    i</code></pre>
+                """).strip())
 
     def test_combined_text_formatting(self):
         self.maxDiff = None

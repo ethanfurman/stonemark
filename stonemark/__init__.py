@@ -92,9 +92,10 @@ from __future__ import print_function
 # Emoji                 That is so funny! :joy:
 
 # imports & globals
-from abc import ABCMeta, abstractmethod
-from aenum import Enum, Flag, IntFlag, auto, export
+from abc import ABCMeta
+from aenum import Enum, Flag, auto, export
 from scription import *
+import codecs
 import re
 
 
@@ -107,10 +108,10 @@ __all__ = [
 
 version = 0, 2, 19, 1
 
-    # HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = None
-    # END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
-    # PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
-    # TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
+HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = TABLE = DETAIL = None
+END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
+PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
+TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
 
 # classes
 
@@ -120,13 +121,12 @@ class NodeType(ABCMeta):
 
 
 ABC = NodeType('ABC', (object, ), {})
-module = globals()
 
 class DocEnum(Enum):
     _init_ = 'value __doc__'
     def __repr__(self): return "<%s.%s>" % (self.__class__.__name__, self.name)
 
-@export(module)
+@export(globals())
 class NodeType(Flag):
     HEADING         = auto()
     PARAGRAPH       = auto()
@@ -145,7 +145,7 @@ class NodeType(Flag):
     TABLE           = auto()
     DETAIL          = auto()
 
-@export(module)
+@export(globals())
 class NodeStatus(DocEnum):
     """
     used by check() to determine effect of next line
@@ -155,12 +155,12 @@ class NodeStatus(DocEnum):
     CHILD           = 'begins a new child node'
     CONCLUDE        = 'last line of the current node (e.g. a fenced code block)'
 
-@export(module)
+@export(globals())
 class ListType(DocEnum):
     ORDERED         = 'ordered list'
     UNORDERED       = 'unordered list'
 
-@export(module)
+@export(globals())
 class CharType(DocEnum):
     WORD        = 'letters and underscore'
     NUMBER      = 'arabic digits'
@@ -168,7 +168,7 @@ class CharType(DocEnum):
     PUNCTUATION = 'comma, period, etc'
     OTHER       = 'none of the above'
 
-@export(module)
+@export(globals())
 class TextType(int, Flag):
     _order_ = 'PLAIN ITALIC BOLD BOLD_ITALIC STRIKE UNDERLINE HIGHLIGHT SUB SUPER CODE FOOT_NOTE ALL_TEXT'
 
@@ -218,7 +218,7 @@ class TextType(int, Flag):
     FOOT_NOTE       = 'a statement [^1]', '[^', ']', True, '<sup>', '</sup>'
     ALL_TEXT        = -1, 'no restrictions', '', '', False, '', ''
 
-@export(module)
+@export(globals())
 class BlankLineType(DocEnum):
     TERMINATE       = 'a blank line terminates the node (e.g. paragraph)'
     INCLUDE         = 'a blank line is included in the node (e.g. fenced code block)'
@@ -293,7 +293,6 @@ class Node(ABC):
         stream = self.stream
         self.reset = False
         #
-        i = 0
         while stream:
             line = stream.current_line.rstrip()
             if not line:
@@ -474,7 +473,6 @@ class Paragraph(Node):
         self.possible_header = possible_header
 
     def check(self, line=0):
-        stream = self.stream
         if self.items:
             # paragraph may have ended
             for regex in UL, OL, CB, BQ, FCB, DTLS, DTLD:
@@ -532,37 +530,37 @@ class CodeBlock(Node):
     def __init__(self, block_type, attrs, **kwds):
         super(CodeBlock, self).__init__(**kwds)
         self.block_type = block_type
-        self.language = None
-        self.attrs = None
-        return
-
+        self.language = ''
+        self.attrs = ''
         attrs = attrs and attrs.strip()
         if not attrs:
             return
+        l_count = attrs.count('{')
+        r_count = attrs.count('}')
+        if l_count != r_count or l_count > 1 or r_count > 1:
+            raise BadFormat('mismatch {} in fenced block attributes %r' % attrs)
         elif attrs[::(len(attrs)-1)] != '{}':
-            l_count = attrs.count('{')
-            r_count = attrs.count('}')
-            if l_count != r_count or l_count > 1 or r_count > 1:
-                raise BadFormat('mismatch {} in fenced block attributes %r' % attrs)
+            # handle language-only attribute
             if attrs.startswith('.'):
                 raise BadFormat('leading . not allowed in %r when only language is specified' % attrs)
-            if ' ' in language:
-                raise BadFormat('invalid language specifier %r (no spaces allowed)' % language)
+            if ' ' in attrs:
+                raise BadFormat('invalid language specifier %r (no spaces allowed)' % attrs)
             attrs = '{ .%s }' % attrs
         #
-        errors = []
         attrs = attrs[1:-1].strip().split()
         if not attrs:
             return
         language = attrs[0]
         attrs = attrs[1:]
         if not language.startswith('.'):
-            raise BadForman('missing leading . in language specifier %r' % language)
-        self.language = language
+            raise BadFormat('missing leading . in language specifier %r' % language)
+        self.language = language[1:]
+        new_attrs = []
         for a in attrs:
             if not a.startswith('.'):
-                raise BadForman('missing leading . in attribute %r' % a)
-        self.attrs = ''.join(attrs)
+                raise BadFormat('missing leading . in attribute %r' % a)
+            new_attrs.append(a[1:])
+        self.attrs = ' '.join(new_attrs)
 
     def check(self, line):
         if self.block_type == 'indented':
@@ -582,6 +580,7 @@ class CodeBlock(Node):
         if match(FCB, line):
             indent, block_type, attrs = match().groups()
             indent = indent and len(indent) or 0
+            attrs = attrs.strip()
             return True, indent, {'block_type': block_type, 'attrs': attrs}
         if match(CB, line):
             return True, 4, {'block_type': 'indented', 'attrs': None}
@@ -755,7 +754,6 @@ class ListItem(Node):
         # remove paragraph status from item[0] if present
         # handle sub-elements
         final_items = []
-        doc = []
         sub_doc = Document('\n'.join(self.items), links=self.links)
         final_items.extend(sub_doc.nodes)
         self.items = final_items
@@ -769,12 +767,7 @@ class ListItem(Node):
         end =  '%s</li>' % spacing
         result = []
         list_item = []
-        last_style = None
         for i in self.items:
-            if not isinstance(i, Text):
-                last_style = None
-            else:
-                last_style = i.style
             if not isinstance(i, List):
                 list_item.append(spacing+i.to_html())
             else:
@@ -888,7 +881,6 @@ class IDLink(Node):
     def finalize(self):
         if self.type == 'footnote':
             final_items = []
-            doc = []
             sub_doc = Document('\n'.join(self.items), links=self.links)
             final_items.extend(sub_doc.nodes)
             # self.items = format(final_items, allowed_styles=self.allowed_text, parent=self)
@@ -974,7 +966,7 @@ class Link(Text):
     def to_html(self):
         if not self.final:
             if self.url is None:
-                raise MissingLink('link %r never found' % (marker, ))
+                raise MissingLink('link %r never found' % (self.marker, ))
             self.text = self.url
             self.final = True
         return self.text
@@ -1037,7 +1029,6 @@ class BlockQuote(Node):
         return super(BlockQuote, self).finalize()
 
     def to_html(self):
-        lead_space = ' ' * 12 * (self.level-1)
         mid_space = '\n' + ' ' * 12
         start = '<blockquote>'
         end = '\n</blockquote>'
@@ -1063,7 +1054,7 @@ class Detail(Node):
         self.text = text
         self.summary = summary
         if isinstance(self.parent, self.__class__):
-            raise BadFormat('nested details not supported (%r)' % line)
+            raise BadFormat('nested details not supported (%r)' % self.stream.line_no)
 
     def check(self, line):
         if self.text is not None:
@@ -1576,6 +1567,24 @@ def format(texts, allowed_styles, parent, _recurse=False):
         result.append(Text(''.join(string), parent=parent))
     return result
 
+def write_css(target):
+    with codecs.open(target, 'w', encoding='utf8') as fh:
+        fh.write(default_css)
+
+def write_file(target, doc, fragment=False, css='stonemark.css'):
+    page = []
+    if not fragment:
+        page.append(html_page_head)
+        if doc.title:
+            page.append(html_page_title % doc.title)
+        page.append(html_page_css % css)
+        page.append(html_page_body)
+    page.append(doc.to_html())
+    if not fragment:
+        page.append(html_page_post)
+    with codecs.open(target, 'w', encoding='utf8') as f:
+        f.write('\n'.join(page).strip())
+
 
 class Document(object):
 
@@ -1674,3 +1683,189 @@ IMAGE_LINK = r'^!\[([^]]*)]\(([^"]*)(".*")?\)$'
 NO_MATCH = False, 0, {}
 WHITE_SPACE = ' \t\n'
 MARKS = "*~_^`[]"
+
+html_page_head = '''\
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>'''
+
+html_page_title = '    <title>%s</title>'
+html_page_css =   '    <link rel="stylesheet" type="text/css" href="./%s"/>'
+
+html_page_body = '''\
+</head>
+<body>'''
+
+html_page_post = '''\
+</body>
+</html>'''
+
+default_css = '''\
+@charset "utf-8";
+/*
+ *  portions adapted from:
+ *  - Chris Coyier [https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/]
+ *  - Dom (dcode) at [https://dev.to/dcodeyt/creating-beautiful-html-tables-with-css-428l]
+ *  - [https://css-tricks.com/styling-code-in-and-out-of-blocks/]
+ */
+
+table {
+    border-collapse: collapse;
+    margin: 10px 0;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+table th {
+  text-align: left;
+  min-width: 150px;
+  background-color: #f3f3f3;
+  border-bottom: thin black solid;
+}
+
+table th:first-child {
+  text-align: left;
+}
+
+table td {
+  padding: 7px 25px 7px 0px;
+  margin: 5px;
+  text-align: left;
+}
+
+tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+tbody tr.active-row {
+    font-weight: bold;
+    color: #009879;
+}
+
+select {
+  max-width: 225px;
+}
+
+blockquote {
+  background: #f9f9f9;
+  border-left: 10px solid #ccc;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C""\201D""\2018""\2019";
+}
+
+blockquote:before {
+  color: #ccc;
+  content: open-quote;
+  font-size: 4em;
+  line-height: 0.1em;
+  margin-right: 0.25em;
+  vertical-align: -0.4em;
+}
+
+blockquote p {
+  display: inline;
+}
+
+/* For all <code> */
+code {
+  font-family: monospace;
+  font-size: inherit;
+  background: #efefff;
+}
+
+/* Code in text */
+p > code,
+li > code,
+dd > code,
+td > code {
+  word-wrap: break-word;
+  box-decoration-break: clone;
+  padding: .1rem .3rem .2rem;
+  border-radius: .75rem;
+}
+
+h1 > code,
+h2 > code,
+h3 > code,
+h4 > code,
+h5 > code {
+  padding: .0rem .2rem;
+  border-radius: .5rem;
+  background: inherit;
+  border: thin black solid;
+}
+
+pre code {
+  display: block;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: scroll;
+  max-width: 100%;
+  min-width: 100px;
+  padding: 10px;
+  border: thin black solid;
+  border-radius: .2rem;
+}
+
+sup {
+  padding: 0px 3px;
+  }
+
+.footnote {
+  padding: 5px 0px;
+  }
+
+*
+ol,
+ul {
+    padding: 0px 15px;
+}
+
+li {
+  padding: 2px;
+}
+
+h1 {
+    display: block;
+    font-size: 2em;
+    margin-top: 0.25em;
+    margin-bottom: 0em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold
+}
+
+h2 {
+    display: block;
+    font-size: 1.5em;
+    margin-top: 1.25em;
+    margin-bottom: 0em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
+
+h3 {
+    display: block;
+    font-size: 1.25;
+    margin-top: 1.25em;
+    margin-bottom: 0em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
+
+h4 {
+    display: block;
+    font-size: 1.0em;
+    margin-top: 1.25em;
+    margin-bottom: 0em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+    font-style: italic;
+}
+
+'''
+
