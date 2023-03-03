@@ -1571,17 +1571,19 @@ def write_css(target):
     with codecs.open(target, 'w', encoding='utf8') as fh:
         fh.write(default_css)
 
-def write_html(target, doc, fragment=False, css='stonemark.css'):
+def write_html(target, doc, title=None, fragment=False, css='stonemark.css'):
     page = []
+    if isinstance(doc, Document):
+        if not title and doc.title:
+            title = doc.title
+        doc = doc.to_html()
     if not fragment:
         page.append(html_page_head)
-        if doc.title:
-            page.append(html_page_title % doc.title)
+        if title:
+            page.append(html_page_title % title)
         if css:
             page.append(html_page_css % css)
         page.append(html_page_body)
-    if isinstance(doc, Document):
-        doc = doc.to_html()
     page.append(doc)
     if not fragment:
         page.append(html_page_post)
