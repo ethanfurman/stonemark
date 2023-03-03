@@ -106,7 +106,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 3, 0
+version = 0, 3, 1, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = TABLE = DETAIL = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
@@ -1571,7 +1571,7 @@ def write_css(target):
     with codecs.open(target, 'w', encoding='utf8') as fh:
         fh.write(default_css)
 
-def write_file(target, doc, fragment=False, css='stonemark.css'):
+def write_html(target, doc, fragment=False, css='stonemark.css'):
     page = []
     if not fragment:
         page.append(html_page_head)
@@ -1580,12 +1580,14 @@ def write_file(target, doc, fragment=False, css='stonemark.css'):
         if css:
             page.append(html_page_css % css)
         page.append(html_page_body)
-    page.append(doc.to_html())
+    if isinstance(doc, Document):
+        doc = doc.to_html()
+    page.append(doc)
     if not fragment:
         page.append(html_page_post)
     with codecs.open(target, 'w', encoding='utf8') as f:
         f.write('\n'.join(page).strip())
-
+write_file = write_html
 
 class Document(object):
 
@@ -1702,7 +1704,7 @@ html_page_post = '''\
 </body>
 </html>'''
 
-default_css = '''\
+default_css = u'''\
 @charset "utf-8";
 /*
  *  portions adapted from:
