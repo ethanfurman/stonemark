@@ -28,6 +28,8 @@ currently supported syntax:
 
     Code                    `code`
 
+    Preformatted Text       ``text``
+
     Horizontal Rule         --- or ***
 
     Link         (in-line)  [title](https://www.example.com)
@@ -71,9 +73,15 @@ currently supported syntax:
 
     Table                 |[ table caption ]| .class-name-for-surrounding-div
                           | Syntax | Description |
-                          | ----------- | ----------- |
+                          | ---- |
                           | Header | Title |
                           | Paragraph | Text |
+                          | Merged Cell ||
+                          | and another | one |
+                          | merged cell \/ two |
+                          | ---- |
+                          | plus | footer |
+
 
 """
 
@@ -111,7 +119,7 @@ version = 0, 3, 4, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = TABLE = DETAIL = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
-PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = FOOT_NOTE = ALL_TEXT = None
+PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = PRE = FOOT_NOTE = ALL_TEXT = None
 TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
 
 # classes
@@ -171,7 +179,7 @@ class CharType(DocEnum):
 
 @export(globals())
 class TextType(int, Flag):
-    _order_ = 'PLAIN ITALIC BOLD BOLD_ITALIC STRIKE UNDERLINE HIGHLIGHT SUB SUPER CODE FOOT_NOTE ALL_TEXT'
+    _order_ = 'PLAIN ITALIC BOLD BOLD_ITALIC STRIKE UNDERLINE HIGHLIGHT SUB SUPER CODE PRE FOOT_NOTE ALL_TEXT'
 
     def __new__(cls, value, docstring, open, close, whitespace, start, end):
         if value == -1:
@@ -216,6 +224,7 @@ class TextType(int, Flag):
     SUB             = 'subscripted: H~2~O', '~', '~', False, '<sub>', '</sub>'
     SUPER           = 'superscripted: x^2^', '^', '^', False, '<sup>', '</sup>'
     CODE            = '`if blah is None`', '`', '`', False, '<code>', '</code>'
+    PRE             = '``pre-formatted text``', '``', '``', True, '<pre>', '</pre>'
     FOOT_NOTE       = 'a statement [^1]', '[^', ']', True, '<sup>', '</sup>'
     ALL_TEXT        = -1, 'no restrictions', '', '', False, '', ''
 
@@ -821,20 +830,10 @@ class Text(Node):
     def to_html(self):
         start = ''
         end = ''
-        for mark, open, close in (
-                (BOLD, '<b>', '</b>'),
-                (ITALIC, '<i>', '</i>'),
-                (STRIKE, '<del>', '</del>'),
-                (UNDERLINE, '<u>', '</u>'),
-                (HIGHLIGHT, '<mark>', '</mark>'),
-                (SUB, '<sub>', '</sub>'),
-                (SUPER, '<sup>', '</sup>'),
-                (CODE, '<code>', '</code>'),
-                (FOOT_NOTE, '<sup>', '</sup>'),
-            ):
+        for mark in (BOLD, ITALIC, CODE, PRE, STRIKE, UNDERLINE, HIGHLIGHT, SUB, SUPER, FOOT_NOTE):
             if mark in self.style:
-                start = start + open
-                end = close + end
+                start = start + mark.start
+                end = mark.end + end
         if self.text is not None:
             body = escape(self.text)
         else:
@@ -1523,6 +1522,34 @@ def format(texts, allowed_styles, parent, _recurse=False):
                 del chars[pos]
                 pos += 1
             continue
+        if ch.char == "`":
+            # code or pre
+            if ''.join(c.char for c in chars[pos:pos+2]) == '``':
+                # pre
+                end = find("``", "``", start+2, False)
+                if end == -1:
+                    # oops
+                    raise BadFormat( 'failed to find matching "``" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+                chars[start:end+2] = [Text(
+                        ''.join([c.char for c in chars[start+2:end]]),
+                        style=PRE,
+                        parent=parent,
+                        )]
+                pos += 2
+                continue
+            else:
+                # code
+                end = find("`", "`", start+1, False)
+                if end == -1:
+                    # oops
+                    raise BadFormat( 'failed to find matching "`" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
+                chars[start:end+1] = [Text(
+                        ''.join([c.char for c in chars[start+1:end]]),
+                        style=CODE,
+                        parent=parent,
+                        )]
+                pos += 1
+                continue
         if ch.char == "`":
             # code
             end = find("`", "`", start+1, False)

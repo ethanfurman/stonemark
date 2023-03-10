@@ -497,6 +497,7 @@ class TestStonemark(TestCase):
 
 
     def test_formatted_doc_1(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 ==============
                 Document Title
@@ -823,6 +824,19 @@ class TestStonemark(TestCase):
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 
+    def test_pre(self):
+        test_doc = dedent("""\
+                Some regular text ``followed by pre-text``.
+
+                ``And some pre-text.``
+                """)
+        expected = dedent("""\
+                <p>Some regular text <pre>followed by pre-text</pre>.</p>
+
+                <p><pre>And some pre-text.</pre></p>
+                """).strip()
+        self.assertEqual(Document(test_doc).to_html(), expected)
+
     def test_code_after_link(self):
         test_doc = dedent("""\
                 [^1] `some code` and
@@ -1062,6 +1076,7 @@ class TestStonemark(TestCase):
                 )
 
     def test_code_block_in_list(self):
+        self.maxDiff = None
         test_doc = dedent("""\
                 Other documents can be linked to from here, or just created.
 
@@ -1123,7 +1138,6 @@ class TestStonemark(TestCase):
                 ---------</code></pre></li>
                 </ul>
                 """).strip(),
-                doc.to_html(),
                 )
 
     def test_fenced_code_block_with_language(self):
