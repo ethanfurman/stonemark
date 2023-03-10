@@ -1881,7 +1881,7 @@ table th:first-child {
 }
 
 table td {
-  padding: 7px 25px 7px 0px;
+  padding: 7px 25px 7px 5px;
   margin: 5px;
   text-align: left;
 }
@@ -1893,6 +1893,18 @@ tbody tr:nth-of-type(even) {
 tbody tr.active-row {
     font-weight: bold;
     color: #009879;
+}
+
+table .merged_cols {
+  text-align: center;
+}
+
+table .merged_rows {
+  vertical-align: middle;
+}
+
+table tfoot tr:first-child {
+  border-top: thin black solid;
 }
 
 select {
@@ -1924,7 +1936,7 @@ blockquote p {
 code {
   font-family: monospace;
   font-size: inherit;
-  background: #efefff;
+  background: #dfdfff;
 }
 
 /* Code in text */
