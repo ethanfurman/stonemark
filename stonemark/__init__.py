@@ -1891,6 +1891,7 @@ default_css = u'''\
  */
 
 table {
+    border: 1px solid #dfdfff;
     border-collapse: collapse;
     margin: 10px 0;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
@@ -1908,9 +1909,18 @@ table th:first-child {
 }
 
 table td {
+  border: 1px solid #dfdfff;
   padding: 7px 25px 7px 5px;
   margin: 5px;
   text-align: left;
+}
+
+.wiki .merged_cols {
+  text-align: center;
+}
+
+.wiki .merged_rows {
+  vertical-align: middle;
 }
 
 tbody tr:nth-of-type(even) {
@@ -1931,6 +1941,10 @@ table .merged_rows {
 }
 
 table tfoot tr:first-child {
+  border-top: thin black solid;
+}
+
+.wiki table tfoot tr:first-child {
   border-top: thin black solid;
 }
 
