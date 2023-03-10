@@ -1595,8 +1595,8 @@ class TestStonemark(TestCase):
                 - *No automatic conversion mechanism exists between storage methods*.
 
                 - When you set this parameter existing attachments remain stored in the
-                  database, only new ones will be stored in the filesystem. The system
-                  will try both locations so it's not a problem (first looking for
+                  database, only new ones will be stored in the filesystem. **The system
+                  will try both locations** so it's not a problem (first looking for
                   database storage, then filesystem storage).
 
                 - If you remove this parameter you should manually store back the files
@@ -1622,13 +1622,13 @@ class TestStonemark(TestCase):
 
                 <ul>
                 <li><i>No automatic conversion mechanism exists between storage methods</i>.</li>
-                <li>When you set this parameter existing attachments remain stored in the database, only new ones will be stored in the filesystem. The system will try both locations so it&apos;s not a problem (first looking for database storage, then filesystem storage).</li>
+                <li>When you set this parameter existing attachments remain stored in the database, only new ones will be stored in the filesystem. <b>The system will try both locations</b> so it&apos;s not a problem (first looking for database storage, then filesystem storage).</li>
                 <li>If you remove this parameter you should manually store back the files in the database because the system will only look in the database.</li>
                 </ul>
                 """).strip(),
                 )
 
-    def test_table(self):
+    def test_table_simple(self):
         test_doc = dedent("""\
                 | Version | Enum | "Fast Enum" | Global Enum |
                 |-----|-----|-----|-----|
@@ -1640,7 +1640,7 @@ class TestStonemark(TestCase):
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Table])
         self.assertEqual( doc.to_html(), dedent("""\
-                <table>
+                <div><table>
                     <thead>
                         <tr>
                             <th>Version</th>
@@ -1675,9 +1675,62 @@ class TestStonemark(TestCase):
                             <td>0.15</td>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
                 """).strip(),
                 doc.to_html(),
+                )
+
+    def test_table_complex(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                |[ Scripts ]| .grid
+                | script name | timing | binary | source |
+                | ----------- | ------ | ------ | ------ |
+                | Emile's FIS extraction script | ??? |||
+                | `fnx_fis_orders`  | 15 min from 6am-10pm | 192.168.17.3:/usr/local/bin | openerp:/.../openerp/addons/  |
+                |  and more text    \/  5 min from 6am-11pm | openerp:/usr/local/bin      |                             \\/
+                | ----------- | ------ | ------ | ------ |
+                | this        | is     |  a     | footer |
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc.nodes), [Table])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <div class="grid"><table>
+                    <caption>Scripts</caption>
+                    <thead>
+                        <tr>
+                            <th>script name</th>
+                            <th>timing</th>
+                            <th>binary</th>
+                            <th>source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Emile&apos;s FIS extraction script</td>
+                            <td colspan="3" class="merged_cols">???</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2" class="merged_rows"><code>fnx_fis_orders</code> and more text</td>
+                            <td>15 min from 6am-10pm</td>
+                            <td>192.168.17.3:/usr/local/bin</td>
+                            <td rowspan="2" class="merged_rows">openerp:/.../openerp/addons/</td>
+                        </tr>
+                        <tr>
+                            <td>5 min from 6am-11pm</td>
+                            <td>openerp:/usr/local/bin</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>this</td>
+                            <td>is</td>
+                            <td>a</td>
+                            <td>footer</td>
+                        </tr>
+                    </tfoot>
+                </table></div>
+                """).strip(),
                 )
 
 
