@@ -1698,13 +1698,17 @@ class TestStonemark(TestCase):
         self.maxDiff = None
         test_doc = dedent("""\
                 |[ Scripts ]| .grid
-                | script name | timing | binary | source |
-                | ----------- | ------ | ------ | ------ |
-                | Emile's FIS extraction script | ??? |||
-                | `fnx_fis_orders`  | 15 min from 6am-10pm | 192.168.17.3:/usr/local/bin | openerp:/.../openerp/addons/  |
-                |  and more text    \/  5 min from 6am-11pm | openerp:/usr/local/bin      |                             \\/
-                | ----------- | ------ | ------ | ------ |
-                | this        | is     |  a     | footer |
+                | h1 | h2 | h3 | h4 | h5 |
+                | h6 | h7 | h8 | h9 | h0 |
+                | --- |
+                |  1 |   2 |  3 |   4 |  5 |
+                |  6 \/  7  8  9    ||| 10 |
+                | 11 \/ 12 | 13   14 || 15 |
+                | 16 \/ 17 | 18 | 19 |  20 |
+                | 21 \/ 22 | 23 | 24 |  25 \/
+                | --- |
+                | f1 | f2 | f3 | f4 | f5 |
+                | f6 | f7 | f8 | f9 | f0 |
                 """)
         doc = Document(test_doc)
         self.assertEqual( shape(doc.nodes), [Table])
@@ -1713,34 +1717,63 @@ class TestStonemark(TestCase):
                     <caption>Scripts</caption>
                     <thead>
                         <tr>
-                            <th>script name</th>
-                            <th>timing</th>
-                            <th>binary</th>
-                            <th>source</th>
+                            <th>h1</th>
+                            <th>h2</th>
+                            <th>h3</th>
+                            <th>h4</th>
+                            <th>h5</th>
+                        </tr>
+                        <tr>
+                            <th>h6</th>
+                            <th>h7</th>
+                            <th>h8</th>
+                            <th>h9</th>
+                            <th>h0</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Emile&apos;s FIS extraction script</td>
-                            <td colspan="3" class="merged_cols">???</td>
+                            <td rowspan="5" class="merged_rows">1 6 11 16 21</td>
+                            <td>2</td>
+                            <td>3</td>
+                            <td>4</td>
+                            <td>5</td>
                         </tr>
                         <tr>
-                            <td rowspan="2" class="merged_rows"><code>fnx_fis_orders</code> and more text</td>
-                            <td>15 min from 6am-10pm</td>
-                            <td>192.168.17.3:/usr/local/bin</td>
-                            <td rowspan="2" class="merged_rows">openerp:/.../openerp/addons/</td>
+                            <td colspan="3" class="merged_cols">7  8  9</td>
+                            <td>10</td>
                         </tr>
                         <tr>
-                            <td>5 min from 6am-11pm</td>
-                            <td>openerp:/usr/local/bin</td>
+                            <td>12</td>
+                            <td colspan="2" class="merged_cols">13   14</td>
+                            <td>15</td>
+                        </tr>
+                        <tr>
+                            <td>17</td>
+                            <td>18</td>
+                            <td>19</td>
+                            <td rowspan="2" class="merged_rows">20 25</td>
+                        </tr>
+                        <tr>
+                            <td>22</td>
+                            <td>23</td>
+                            <td>24</td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td>this</td>
-                            <td>is</td>
-                            <td>a</td>
-                            <td>footer</td>
+                            <td>f1</td>
+                            <td>f2</td>
+                            <td>f3</td>
+                            <td>f4</td>
+                            <td>f5</td>
+                        </tr>
+                        <tr>
+                            <td>f6</td>
+                            <td>f7</td>
+                            <td>f8</td>
+                            <td>f9</td>
+                            <td>f0</td>
                         </tr>
                     </tfoot>
                 </table></div>

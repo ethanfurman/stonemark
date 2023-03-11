@@ -1919,14 +1919,14 @@ table td {
     }
 
 table tbody tr:first-child td {
-    border-top: thin black solid;
-    }
-
-tfoot tr:first-child td {
     border-top: 1px solid black;
     }
 
-tfoot tr td {
+table tfoot tr:first-child td {
+    border-top: 1px solid black;
+    }
+
+table tfoot tr td {
     border: none;
     background-color: #f9f9f9;
     font-weight: bold;
@@ -1979,7 +1979,7 @@ h5 > code {
     padding: .0rem .2rem;
     border-radius: .5rem;
     background: inherit;
-    border: thin black solid;
+    border: 1px solid black;
     }
 
 pre code {
@@ -1990,7 +1990,7 @@ pre code {
     max-width: 100%;
     min-width: 100px;
     padding: 10px;
-    border: thin black solid;
+    border: 1px solid black;
     border-radius: .2rem;
     }
 
