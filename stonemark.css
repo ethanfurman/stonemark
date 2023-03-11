@@ -7,122 +7,130 @@
  */
 
 table {
+    border: 1px solid #dfdfff;
     border-collapse: collapse;
     margin: 10px 0;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-}
+    }
+
+table .merged_cols {
+    text-align: center;
+    }
+
+table .merged_rows {
+    vertical-align: middle;
+    }
 
 table th {
-  text-align: left;
-  min-width: 150px;
-  background-color: #f3f3f3;
-  border-bottom: thin black solid;
-}
-
-table th:first-child {
-  text-align: left;
-}
+    text-align: left;
+    min-width: 150px;
+    background-color: #f9f9f9;
+    }
 
 table td {
-  padding: 7px 25px 7px 0px;
-  margin: 5px;
-  text-align: left;
-}
-
-tbody tr:nth-of-type(even) {
+    border-top: 1px solid #dfdfff;
+    border-right: 1px solid #dfdfff;
+    padding: 7px 25px 7px 5px;
+    margin: 5px;
+    text-align: left;
     background-color: #f3f3f3;
-}
+    }
 
-tbody tr.active-row {
+table tbody tr:first-child td {
+    border-top: thin black solid;
+    }
+
+tfoot tr:first-child td {
+    border-top: 1px solid black;
+    }
+
+tfoot tr td {
+    border: none;
+    background-color: #f9f9f9;
     font-weight: bold;
-    color: #009879;
-}
-
-select {
-  max-width: 225px;
-}
+    }
 
 blockquote {
-  background: #f9f9f9;
-  border-left: 10px solid #ccc;
-  margin: 1.5em 10px;
-  padding: 0.5em 10px;
-  quotes: "\201C""\201D""\2018""\2019";
-}
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+    quotes: "C""D""8""9";
+    }
 
 blockquote:before {
-  color: #ccc;
-  content: open-quote;
-  font-size: 4em;
-  line-height: 0.1em;
-  margin-right: 0.25em;
-  vertical-align: -0.4em;
-}
+    color: #ccc;
+    content: open-quote;
+    font-size: 4em; 
+    line-height: 0.1em;
+    margin-right: 0.25em;
+    vertical-align: -0.4em;
+    }
 
 blockquote p {
-  display: inline;
-}
+    display: inline;
+    }
 
 /* For all <code> */
 code {
-  font-family: monospace;
-  font-size: inherit;
-  background: #efefff;
-}
+    font-family: monospace;
+    font-size: inherit;
+    background: #dfdfff;
+    }
 
 /* Code in text */
 p > code,
 li > code,
 dd > code,
 td > code {
-  word-wrap: break-word;
-  box-decoration-break: clone;
-  padding: .1rem .3rem .2rem;
-  border-radius: .75rem;
-}
+    word-wrap: break-word;
+    box-decoration-break: clone;
+    padding: .1rem .3rem .2rem;
+    border-radius: .75rem;
+    }
 
 h1 > code,
 h2 > code,
 h3 > code,
 h4 > code,
 h5 > code {
-  padding: .0rem .2rem;
-  border-radius: .5rem;
-  background: inherit;
-  border: thin black solid;
-}
+    padding: .0rem .2rem;
+    border-radius: .5rem;
+    background: inherit;
+    border: thin black solid;
+    }
 
 pre code {
-  display: block;
-  white-space: pre;
-  -webkit-overflow-scrolling: touch;
-  overflow-x: scroll;
-  max-width: 100%;
-  min-width: 100px;
-  padding: 10px;
-  border: thin black solid;
-  border-radius: .2rem;
-}
+    display: block;
+    white-space: pre;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: scroll;
+    max-width: 100%;
+    min-width: 100px;
+    padding: 10px;
+    border: thin black solid;
+    border-radius: .2rem;
+    }
 
 sup {
-  padding: 0px 3px;
-  }
+    padding: 0px 3px;
+    }
 
 .footnote {
-  padding: 5px 0px;
-  }
+    padding: 5px 0px;
+    }
 
 *
 ol,
 ul {
     padding: 0px 15px;
-}
+    }
 
 li {
-  padding: 2px;
-}
+    padding: 2px;
+    }
 
-h1 { 
+h1 {
     display: block;
     font-size: 2em;
     margin-top: 0.25em;
@@ -130,7 +138,7 @@ h1 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold
-}
+    }
 
 h2 {
     display: block;
@@ -140,9 +148,9 @@ h2 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold;
-}
+    }
 
-h3 { 
+h3 {
     display: block;
     font-size: 1.25;
     margin-top: 1.25em;
@@ -150,9 +158,9 @@ h3 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold;
-}
+    }
 
-h4 { 
+h4 {
     display: block;
     font-size: 1.0em;
     margin-top: 1.25em;
@@ -161,5 +169,5 @@ h4 {
     margin-right: 0;
     font-weight: bold;
     font-style: italic;
-}
+    }
 

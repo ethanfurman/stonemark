@@ -1171,27 +1171,26 @@ class Table(Node):
     def combine_cells(self, range, type):
         final_rows = []
         if range is not None:
-            for i, row in enumerate(self.rows[slice(*range)]):
+            for i, row in enumerate(self.rows[slice(*range)], start=range[0]):
                 new_row = []
                 final_rows.append(new_row)
                 last_cell = None
                 for j, cell in enumerate(row):
-                    if cell.valid:
-                        if not cell.rowspan:
-                            if cell is not last_cell:
-                                cell.type = type
-                                new_row.append(cell)
-                                last_cell = cell
+                    if not cell.rowspan:
+                        if cell is not last_cell:
+                            cell.type = type
+                            new_row.append(cell)
+                            last_cell = cell
+                    else:
+                        if i == range[0]:
+                            raise BadFormat('no previous row to merge cell with [lines %r - %r' % (self.start_line, self.end_line))
+                        merge_cell = self.rows[i-1][j]
+                        row[j] = merge_cell
+                        merge_cell.text += ' ' + cell.text if cell.text else ''
+                        if merge_cell.rowspan:
+                            merge_cell.rowspan += 1
                         else:
-                            cell.valid = False
-                            if i == 0:
-                                raise BadFormat('no previous row to merge cell with [lines %r - %r' % (self.start_line, self.end_line))
-                            merge_cell = self.rows[range[0]+i-1][j]
-                            merge_cell.text += ' ' + cell.text if cell.text else ''
-                            if merge_cell.rowspan:
-                                merge_cell.rowspan += 1
-                            else:
-                                merge_cell.rowspan = 2
+                            merge_cell.rowspan = 2
         return final_rows
 
     def finalize(self):
@@ -1288,7 +1287,7 @@ class Table(Node):
             ch = line[i]
             vert = line[i:i+2] == '\\/'
             if ch == '\\' and not vert:
-                cell.append(line[i+1])
+                cell.extend(line[i:i+2])
                 i += 2
                 continue
             elif ch == '|' or vert:
@@ -1326,7 +1325,6 @@ class Cell(object):
         self.text = text
         self.colspan = None
         self.rowspan = None
-        self.valid = True       # False when merged with another cell
         self.type = type
 
     def __repr__(self):
@@ -1895,142 +1893,124 @@ table {
     border-collapse: collapse;
     margin: 10px 0;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-}
-
-table th {
-  text-align: left;
-  min-width: 150px;
-  background-color: #f3f3f3;
-  border-bottom: thin black solid;
-}
-
-table th:first-child {
-  text-align: left;
-}
-
-table td {
-  border: 1px solid #dfdfff;
-  padding: 7px 25px 7px 5px;
-  margin: 5px;
-  text-align: left;
-}
-
-.wiki .merged_cols {
-  text-align: center;
-}
-
-.wiki .merged_rows {
-  vertical-align: middle;
-}
-
-tbody tr:nth-of-type(even) {
-    background-color: #f3f3f3;
-}
-
-tbody tr.active-row {
-    font-weight: bold;
-    color: #009879;
-}
+    }
 
 table .merged_cols {
-  text-align: center;
-}
+    text-align: center;
+    }
 
 table .merged_rows {
-  vertical-align: middle;
-}
+    vertical-align: middle;
+    }
 
-table tfoot tr:first-child {
-  border-top: thin black solid;
-}
+table th {
+    text-align: left;
+    min-width: 150px;
+    background-color: #f9f9f9;
+    }
 
-.wiki table tfoot tr:first-child {
-  border-top: thin black solid;
-}
+table td {
+    border-top: 1px solid #dfdfff;
+    border-right: 1px solid #dfdfff;
+    padding: 7px 25px 7px 5px;
+    margin: 5px;
+    text-align: left;
+    background-color: #f3f3f3;
+    }
 
-select {
-  max-width: 225px;
-}
+table tbody tr:first-child td {
+    border-top: thin black solid;
+    }
+
+tfoot tr:first-child td {
+    border-top: 1px solid black;
+    }
+
+tfoot tr td {
+    border: none;
+    background-color: #f9f9f9;
+    font-weight: bold;
+    }
 
 blockquote {
-  background: #f9f9f9;
-  border-left: 10px solid #ccc;
-  margin: 1.5em 10px;
-  padding: 0.5em 10px;
-  quotes: "\201C""\201D""\2018""\2019";
-}
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+    quotes: "\201C""\201D""\2018""\2019";
+    }
 
 blockquote:before {
-  color: #ccc;
-  content: open-quote;
-  font-size: 4em;
-  line-height: 0.1em;
-  margin-right: 0.25em;
-  vertical-align: -0.4em;
-}
+    color: #ccc;
+    content: open-quote;
+    font-size: 4em; 
+    line-height: 0.1em;
+    margin-right: 0.25em;
+    vertical-align: -0.4em;
+    }
 
 blockquote p {
-  display: inline;
-}
+    display: inline;
+    }
 
 /* For all <code> */
 code {
-  font-family: monospace;
-  font-size: inherit;
-  background: #dfdfff;
-}
+    font-family: monospace;
+    font-size: inherit;
+    background: #dfdfff;
+    }
 
 /* Code in text */
 p > code,
 li > code,
 dd > code,
 td > code {
-  word-wrap: break-word;
-  box-decoration-break: clone;
-  padding: .1rem .3rem .2rem;
-  border-radius: .75rem;
-}
+    word-wrap: break-word;
+    box-decoration-break: clone;
+    padding: .1rem .3rem .2rem;
+    border-radius: .75rem;
+    }
 
 h1 > code,
 h2 > code,
 h3 > code,
 h4 > code,
 h5 > code {
-  padding: .0rem .2rem;
-  border-radius: .5rem;
-  background: inherit;
-  border: thin black solid;
-}
+    padding: .0rem .2rem;
+    border-radius: .5rem;
+    background: inherit;
+    border: thin black solid;
+    }
 
 pre code {
-  display: block;
-  white-space: pre;
-  -webkit-overflow-scrolling: touch;
-  overflow-x: scroll;
-  max-width: 100%;
-  min-width: 100px;
-  padding: 10px;
-  border: thin black solid;
-  border-radius: .2rem;
-}
+    display: block;
+    white-space: pre;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: scroll;
+    max-width: 100%;
+    min-width: 100px;
+    padding: 10px;
+    border: thin black solid;
+    border-radius: .2rem;
+    }
 
 sup {
-  padding: 0px 3px;
-  }
+    padding: 0px 3px;
+    }
 
 .footnote {
-  padding: 5px 0px;
-  }
+    padding: 5px 0px;
+    }
 
 *
 ol,
 ul {
     padding: 0px 15px;
-}
+    }
 
 li {
-  padding: 2px;
-}
+    padding: 2px;
+    }
 
 h1 {
     display: block;
@@ -2040,7 +2020,7 @@ h1 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold
-}
+    }
 
 h2 {
     display: block;
@@ -2050,7 +2030,7 @@ h2 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold;
-}
+    }
 
 h3 {
     display: block;
@@ -2060,7 +2040,7 @@ h3 {
     margin-left: 0;
     margin-right: 0;
     font-weight: bold;
-}
+    }
 
 h4 {
     display: block;
@@ -2071,7 +2051,7 @@ h4 {
     margin-right: 0;
     font-weight: bold;
     font-style: italic;
-}
+    }
 
 '''
 
