@@ -115,7 +115,7 @@ __all__ = [
         'Document',
         ]
 
-version = 0, 3, 5, 1
+version = 0, 3, 5
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = TABLE = DETAIL = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
