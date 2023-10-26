@@ -831,9 +831,9 @@ class TestStonemark(TestCase):
                 ``And some pre-text.``
                 """)
         expected = dedent("""\
-                <p>Some regular text <pre>followed by pre-text</pre>.</p>
+                <p>Some regular text <span class="pre">followed by pre-text</span>.</p>
 
-                <p><pre>And some pre-text.</pre></p>
+                <p><span class="pre">And some pre-text.</span></p>
                 """).strip()
         self.assertEqual(Document(test_doc).to_html(), expected)
 

@@ -28,7 +28,7 @@ currently supported syntax:
 
     Code                    `code`
 
-    Preformatted Text       ``text``
+    Monospaced Text         ``text``
 
     Horizontal Rule         --- or ***
 
@@ -119,7 +119,7 @@ version = 0, 3, 6, 1
 
 HEADING = PARAGRAPH = TEXT = QUOTE = O_LIST = U_LIST = LISTITEM = CODEBLOCK = RULE = IMAGE = FOOTNOTE = LINK = ID = DEFINITION = TABLE = DETAIL = None
 END = SAME = CHILD = CONCLUDE = ORDERED = UNORDERED = None
-PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = PRE = FOOT_NOTE = ALL_TEXT = None
+PLAIN = BOLD = ITALIC = STRIKE = UNDERLINE = HIGHLIGHT = SUB = SUPER = CODE = MONO = FOOT_NOTE = ALL_TEXT = None
 TERMINATE = INCLUDE = RESET = WORD = NUMBER = WHITESPACE = PUNCTUATION = OTHER = None
 
 # classes
@@ -179,7 +179,7 @@ class CharType(DocEnum):
 
 @export(globals())
 class TextType(int, Flag):
-    _order_ = 'PLAIN ITALIC BOLD BOLD_ITALIC STRIKE UNDERLINE HIGHLIGHT SUB SUPER CODE PRE FOOT_NOTE ALL_TEXT'
+    _order_ = 'PLAIN ITALIC BOLD BOLD_ITALIC STRIKE UNDERLINE HIGHLIGHT SUB SUPER CODE MONO FOOT_NOTE ALL_TEXT'
 
     def __new__(cls, value, docstring, open, close, whitespace, start, end):
         if value == -1:
@@ -224,7 +224,7 @@ class TextType(int, Flag):
     SUB             = 'subscripted: H~2~O', '~', '~', False, '<sub>', '</sub>'
     SUPER           = 'superscripted: x^2^', '^', '^', False, '<sup>', '</sup>'
     CODE            = '`if blah is None`', '`', '`', False, '<code>', '</code>'
-    PRE             = '``pre-formatted text``', '``', '``', True, '<pre>', '</pre>'
+    MONO            = '``monospaced text``', '``', '``', True, '<span class="pre">', '</span>'
     FOOT_NOTE       = 'a statement [^1]', '[^', ']', True, '<sup>', '</sup>'
     ALL_TEXT        = -1, 'no restrictions', '', '', False, '', ''
 
@@ -830,7 +830,7 @@ class Text(Node):
     def to_html(self):
         start = ''
         end = ''
-        for mark in (BOLD, ITALIC, CODE, PRE, STRIKE, UNDERLINE, HIGHLIGHT, SUB, SUPER, FOOT_NOTE):
+        for mark in (BOLD, ITALIC, CODE, MONO, STRIKE, UNDERLINE, HIGHLIGHT, SUB, SUPER, FOOT_NOTE):
             if mark in self.style:
                 start = start + mark.start
                 end = mark.end + end
@@ -1530,7 +1530,7 @@ def format(texts, allowed_styles, parent, _recurse=False):
                     raise BadFormat( 'failed to find matching "``" starting near %r between %r and %r' % (chars[pos-10:pos+10], parent.start_line, parent.end_line))
                 chars[start:end+2] = [Text(
                         ''.join([c.char for c in chars[start+2:end]]),
-                        style=PRE,
+                        style=MONO,
                         parent=parent,
                         )]
                 pos += 2
@@ -1842,16 +1842,16 @@ def UID():
 UID = UID()
 match = Var(re.match)
 
-UL = r'(-|\+|\*) (.*)'
-OL = r'(\d+)(\.|\)) (.*)'
-CL = r'( *)?(.*)'
-BQ = r'(>+)'
-CB = r'    (.*)'
-FCB = r'( *)(```|~~~) ?(.*)'
-DTLS = r'(-->) ?(.*)'
-DTLD = r'(--\|) ?(.*)'
-HR = r'(---+|\*\*\*+)$'
-HD = r'(===+|---+|\.\.\.+)$'
+UL = r'(-|\+|\*) (.*)'                                                      # unordered list
+OL = r'(\d+)(\.|\)) (.*)'                                                   # ordered list
+CL = r'( *)?(.*)'                                                           # continuation line
+BQ = r'(>+)'                                                                # block quote
+CB = r'    (.*)'                                                            # code block, indented
+FCB = r'( *)(```|~~~) ?(.*)'                                                # code block, fenced
+DTLS = r'(-->) ?(.*)'                                                       # detail, summary line (top)
+DTLD = r'(--\|) ?(.*)'                                                      # detail, body line
+HR = r'(---+|\*\*\*+)$'                                                     # horizontal rule
+HD = r'(===+|---+|\.\.\.+)$'                                                # heading
 ID_LINK = r'^\[(\^?.*?)\]: (.*)'
 EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
 WIKI_LINK = r'\b\[((?!^).*?)\]\b'
@@ -1968,7 +1968,7 @@ td > code {
     word-wrap: break-word;
     box-decoration-break: clone;
     padding: .1rem .3rem .2rem;
-    border-radius: .75rem;
+    border-radius: .25rem;
     }
 
 h1 > code,
@@ -1980,6 +1980,13 @@ h5 > code {
     border-radius: .5rem;
     background: inherit;
     border: 1px solid black;
+    }
+
+.pre {
+    font-family: monospace;
+    font-size: inherit;
+    white-space: pre;
+    background-color: #eeeeee;
     }
 
 pre code {
