@@ -623,11 +623,15 @@ class Image(Node):
     type = IMAGE
     allowed_text = ALL_TEXT
 
-    def __init__(self, title, text, url, **kwds):
+    def __init__(self, title, text, image_url, marker=None, link_url=None, **kwds):
         super(Image, self).__init__(**kwds)
         self.items = format(text, allowed_styles=self.allowed_text, parent=self)
         self.title = title or ''
-        self.url = url.strip()
+        self.image_url = image_url.strip()
+        self.marker = marker
+        self.link_url = link_url
+        if marker is not None:
+            self.links.setdefault(marker, []).append(self)
 
     def check(self, line):
         return CONCLUDE
@@ -636,7 +640,13 @@ class Image(Node):
     def is_type(cls, last_line, line, next_line):
         if match(IMAGE_LINK, line):
             alt_text, url, title = match().groups()
-            return True, 0, {'text':alt_text, 'title':title, 'url':url}
+            return True, 0, {'text':alt_text, 'title':title, 'image_url':url}
+        elif match(IMAGE_LINK_DIRECT, line):
+            alt_text, url, title, link = match().groups()
+            return True, 0, {'text':alt_text, 'title':title, 'image_url':url, 'link_url':link}
+        elif match(IMAGE_LINK_REFERENCE, line):
+            alt_text, url, title, ref = match().groups()
+            return True, 0, {'text':alt_text, 'title':title, 'image_url':url, 'marker':ref}
         return NO_MATCH
 
     def to_html(self):
@@ -650,7 +660,10 @@ class Image(Node):
         if title:
             title = 'title=%s' % title
         attrs = ('%s %s' % (title, alt_text)).strip()
-        return '\n<div><img src="%s" %s></div>\n' % (self.url, attrs)
+        if self.link_url is None:
+            return '\n<div><img src="%s" %s></div>\n' % (self.image_url, attrs)
+        else:
+            return '\n<div><a href="%s"><img src="%s" %s></a></div>\n' % (self.link_url, self.image_url, attrs)
 
 class List(Node):
     type = O_LIST | U_LIST
@@ -892,7 +905,12 @@ class IDLink(Node):
             keep = True
         else:
             for link in self.links[self.marker]:
-                link.text %= ''.join(self.items)
+                if isinstance(link, Link):
+                    link.text %= ''.join(self.items)
+                elif isinstance(link, Image):
+                    link.link_url = self.items[0]
+                else:
+                    raise Exception('unknown link type %r [%r]' % (type(link), self.text))
                 link.final = True
             keep = False
         return keep
@@ -1857,6 +1875,8 @@ EXT_LINK = r'\b\[((?!^).*?)\]\((.*?)\)\b'
 WIKI_LINK = r'\b\[((?!^).*?)\]\b'
 FOOT_NOTE_LINK = r'\[(\^.*?)\]:'
 IMAGE_LINK = r'^!\[([^]]*)]\(([^"]*)(".*")?\)$'
+IMAGE_LINK_DIRECT = r'^\[!\[([^]]*)]\(([^"]*)(".*")?\)\]\((.*)\)$'
+IMAGE_LINK_REFERENCE = r'^\[!\[([^]]*)]\(([^"]*)(".*")?\)\]\[(.*)\]$'
 
 NO_MATCH = False, 0, {}
 WHITE_SPACE = ' \t\n'

@@ -481,6 +481,72 @@ class TestStonemark(TestCase):
                 <p>A concluding paragraph.</p>
                 """).strip())
 
+    def test_format_image_as_direct_link(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                An introductory paragraph.
+
+                ![*a riveting picture*](https://www.image_library/photos/rivets.png "Rivets!")
+
+                Image-as-link
+                -------------
+
+                [![*a riveting picture*](https://www.image_library/photos/rivets.png "Rivets!")](http:www.host.com/rivet_article)
+
+                A concluding paragraph.
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc), [Paragraph, Image, Heading, Image, Paragraph])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>An introductory paragraph.</p>
+
+
+                <div><img src="https://www.image_library/photos/rivets.png" title="Rivets!" alt="<i>a riveting picture</i>"></div>
+
+
+                <h3>Image-as-link</h3>
+
+
+                <div><a href="http:www.host.com/rivet_article"><img src="https://www.image_library/photos/rivets.png" title="Rivets!" alt="<i>a riveting picture</i>"></a></div>
+
+
+                <p>A concluding paragraph.</p>
+                """).strip())
+
+    def test_format_image_as_reference_link(self):
+        self.maxDiff = None
+        test_doc = dedent("""\
+                An introductory paragraph.
+
+                ![*a riveting picture*](https://www.image_library/photos/rivets.png "Rivets!")
+
+                Image-as-link
+                -------------
+
+                [![*a riveting picture*](https://www.image_library/photos/rivets.png "Rivets!")][rivets]
+
+                A concluding paragraph.
+
+                [rivets]: http:www.host.com/rivet_article
+                """)
+        doc = Document(test_doc)
+        self.assertEqual( shape(doc), [Paragraph, Image, Heading, Image, Paragraph])
+        self.assertEqual( doc.to_html(), dedent("""\
+                <p>An introductory paragraph.</p>
+
+
+                <div><img src="https://www.image_library/photos/rivets.png" title="Rivets!" alt="<i>a riveting picture</i>"></div>
+
+
+                <h3>Image-as-link</h3>
+
+
+                <div><a href="http:www.host.com/rivet_article"><img src="https://www.image_library/photos/rivets.png" title="Rivets!" alt="<i>a riveting picture</i>"></a></div>
+
+
+                <p>A concluding paragraph.</p>
+                """).strip())
+
     def test_format_split_parens(self):
         test_doc = dedent("""\
                 A paragraph with a footnote[^1].
